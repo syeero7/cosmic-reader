@@ -1,4 +1,4 @@
-module cosmic-reader
+module github.com/syeero7/cosmic-reader
 
 go 1.23
 
