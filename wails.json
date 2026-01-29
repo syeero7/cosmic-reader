@@ -6,8 +6,8 @@
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
+  "build:tags": "webkit2_41",
   "author": {
-    "name": "emal",
-    "email": "emalhasitha@proton.me"
+    "name": "emal"
   }
 }
