@@ -33,6 +33,7 @@ type ComicMetadata struct {
 }
 
 var PageCountParseError = errors.New("page count parsing failed")
+var ExtractionDoneError = errors.New("info extraction is done")
 
 func extractArchive(fpath string) (*ComicInfo, error) {
 	file, err := os.Open(fpath)
@@ -52,8 +53,8 @@ func extractArchive(fpath string) (*ComicInfo, error) {
 		return nil, fmt.Errorf("filetype '%s' is not supported", filepath.Ext(file.Name()))
 	}
 
-	cinfo := new(ComicInfo)
 	count := 0
+	cinfo := new(ComicInfo)
 	thumbnailDone, pagesDone, titleDone := false, false, false
 	err = extr.Extract(ctx, file, func(ctx context.Context, f archives.FileInfo) error {
 		if strings.ToLower(f.NameInArchive) == "comicinfo.xml" {
@@ -87,7 +88,7 @@ func extractArchive(fpath string) (*ComicInfo, error) {
 			}
 
 			if titleDone && pagesDone && thumbnailDone {
-				return nil
+				return ExtractionDoneError
 			}
 
 			count++
@@ -100,7 +101,11 @@ func extractArchive(fpath string) (*ComicInfo, error) {
 		cinfo.pageCount = count
 	}
 
-	return cinfo, nil
+	if errors.Is(err, ExtractionDoneError) {
+		err = nil
+	}
+
+	return cinfo, err
 }
 
 func parseComicInfoXML(file archives.FileInfo) (int, string, error) {
