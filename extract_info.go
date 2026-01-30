@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/xml"
 	"errors"
@@ -14,14 +13,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/disintegration/imaging"
 	"github.com/mholt/archives"
 )
 
 type ComicInfo struct {
-	pageCount int
-	title     string
-	thumbnail []byte
+	id            string
+	pageCount     int
+	title         string
+	thumbnailPath string
 }
 
 type ComicMetadata struct {
@@ -54,6 +53,7 @@ func extractArchive(fpath string) (*ComicInfo, error) {
 	}
 
 	count := 0
+	var thumbnail archives.FileInfo
 	cinfo := new(ComicInfo)
 	thumbnailDone, pagesDone, titleDone := false, false, false
 	err = extr.Extract(ctx, file, func(ctx context.Context, f archives.FileInfo) error {
@@ -78,12 +78,7 @@ func extractArchive(fpath string) (*ComicInfo, error) {
 			}
 
 			if n == 1 {
-				thumbnail, err := generateThumbnail(fpath)
-				if err != nil {
-					return err
-				}
-
-				cinfo.thumbnail = thumbnail
+				thumbnail = f
 				thumbnailDone = true
 			}
 
@@ -101,10 +96,19 @@ func extractArchive(fpath string) (*ComicInfo, error) {
 		cinfo.pageCount = count
 	}
 
-	if errors.Is(err, ExtractionDoneError) {
-		err = nil
+	if !errors.Is(err, ExtractionDoneError) {
+		return nil, err
 	}
 
+	id, err := getUniqueId(cinfo.title)
+	if err != nil {
+		return nil, err
+	}
+
+	cinfo.id = id
+	// server thumbnail using http.ServeFile
+	tmbpath, err := cacheThumbnail(thumbnail, id)
+	cinfo.thumbnailPath = tmbpath
 	return cinfo, err
 }
 
@@ -151,18 +155,6 @@ func parseComicInfoXML(file archives.FileInfo) (int, string, error) {
 	}
 
 	return metadata.PageCount, metadata.Title, nil
-}
-
-func generateThumbnail(fpath string) ([]byte, error) {
-	img, err := imaging.Open(fpath)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	thumb := imaging.Thumbnail(img, 100, 150, imaging.CatmullRom)
-	buf := new(bytes.Buffer)
-	err = imaging.Encode(buf, thumb, imaging.JPEG, imaging.JPEGQuality(80))
-	return buf.Bytes(), err
 }
 
 func getFileType(name string) string {
