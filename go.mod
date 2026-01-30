@@ -3,6 +3,7 @@ module github.com/syeero7/cosmic-reader
 go 1.24.0
 
 require (
+	github.com/disintegration/imaging v1.6.2
 	github.com/mholt/archives v0.1.5
 	github.com/wailsapp/wails/v2 v2.11.0
 )
@@ -49,9 +50,10 @@ require (
 	github.com/wailsapp/mimetype v1.4.1 // indirect
 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
+	golang.org/x/image v0.35.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.29.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
 )
 
 // replace github.com/wailsapp/wails/v2 v2.11.0 => /home/karazu/go/pkg/mod
