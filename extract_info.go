@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/xml"
 	"errors"
@@ -13,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/disintegration/imaging"
 	"github.com/mholt/archives"
 )
 
@@ -32,7 +34,7 @@ type ComicMetadata struct {
 
 var PageCountParseError = errors.New("page count parsing failed")
 
-func extractArchive(fp string, index int) (*ComicInfo, error) {
+func extractArchive(fp string) (*ComicInfo, error) {
 	file, err := os.Open(fp)
 	if err != nil {
 		return nil, err
@@ -72,7 +74,12 @@ func extractArchive(fp string, index int) (*ComicInfo, error) {
 			}
 
 			if n == 1 {
-				// TODO: use this image as thumbnail
+				thumbnail, err := generateThumbnail(fp)
+				if err != nil {
+					return err
+				}
+
+				cinfo.thumbnail = thumbnail
 				thumbnailDone = true
 			}
 		}
@@ -85,6 +92,11 @@ func extractArchive(fp string, index int) (*ComicInfo, error) {
 		return nil
 	})
 
+	if !pagesDone {
+		cinfo.pageCount = count
+	}
+
+	return cinfo, nil
 }
 
 func parseComicInfoXML(file archives.FileInfo) (int, string, error) {
@@ -130,6 +142,18 @@ func parseComicInfoXML(file archives.FileInfo) (int, string, error) {
 	}
 
 	return metadata.PageCount, metadata.Title, nil
+}
+
+func generateThumbnail(fp string) ([]byte, error) {
+	img, err := imaging.Open(fp)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	thumb := imaging.Thumbnail(img, 100, 150, imaging.CatmullRom)
+	buf := new(bytes.Buffer)
+	err = imaging.Encode(buf, thumb, imaging.JPEG, imaging.JPEGQuality(80))
+	return buf.Bytes(), err
 }
 
 func getFileType(name string) string {
