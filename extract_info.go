@@ -34,15 +34,15 @@ type ComicMetadata struct {
 
 var PageCountParseError = errors.New("page count parsing failed")
 
-func extractArchive(fp string) (*ComicInfo, error) {
-	file, err := os.Open(fp)
+func extractArchive(fpath string) (*ComicInfo, error) {
+	file, err := os.Open(fpath)
 	if err != nil {
 		return nil, err
 	}
 
 	defer file.Close()
 	ctx := context.Background()
-	format, _, err := archives.Identify(ctx, fp, file)
+	format, _, err := archives.Identify(ctx, fpath, file)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func extractArchive(fp string) (*ComicInfo, error) {
 			}
 
 			if n == 1 {
-				thumbnail, err := generateThumbnail(fp)
+				thumbnail, err := generateThumbnail(fpath)
 				if err != nil {
 					return err
 				}
@@ -148,8 +148,8 @@ func parseComicInfoXML(file archives.FileInfo) (int, string, error) {
 	return metadata.PageCount, metadata.Title, nil
 }
 
-func generateThumbnail(fp string) ([]byte, error) {
-	img, err := imaging.Open(fp)
+func generateThumbnail(fpath string) ([]byte, error) {
+	img, err := imaging.Open(fpath)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -165,10 +165,10 @@ func getFileType(name string) string {
 	return strings.Split(mimetype, "/")[0]
 }
 
-func isSupported(fp string) bool {
+func isSupported(fpath string) bool {
 	fileTypes := []string{"cbr", "cbz", "cb7", "cbt"}
 	for _, t := range fileTypes {
-		if strings.HasSuffix(fp, t) {
+		if strings.HasSuffix(fpath, t) {
 			return true
 		}
 	}
