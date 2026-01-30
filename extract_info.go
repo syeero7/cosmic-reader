@@ -63,8 +63,11 @@ func extractArchive(fp string) (*ComicInfo, error) {
 			}
 
 			cinfo.title = title
-			cinfo.pageCount = pageCount
-			pagesDone, titleDone = true, true
+			titleDone = true
+			if pageCount > 0 {
+				cinfo.pageCount = pageCount
+				pagesDone = true
+			}
 		}
 
 		if getFileType(f.NameInArchive) == "image" {
@@ -82,13 +85,14 @@ func extractArchive(fp string) (*ComicInfo, error) {
 				cinfo.thumbnail = thumbnail
 				thumbnailDone = true
 			}
+
+			if titleDone && pagesDone && thumbnailDone {
+				return nil
+			}
+
+			count++
 		}
 
-		if titleDone && pagesDone && thumbnailDone {
-			return nil
-		}
-
-		count++
 		return nil
 	})
 
@@ -116,29 +120,29 @@ func parseComicInfoXML(file archives.FileInfo) (int, string, error) {
 		return 0, "", err
 	}
 
+	if strings.ToLower(metadata.Title) == "chapter" && len(metadata.Series) > 0 {
+		metadata.Title = metadata.Series
+	}
+
 	// TODO: remove metadata logging
 	slog.Any("comic metadata", metadata)
 	if metadata.PageCount == 0 {
 		parts := strings.Split(strings.ToLower(metadata.Summary), "pages: ")
 		if len(parts) != 2 {
-			return 0, "", PageCountParseError
+			return 0, metadata.Title, PageCountParseError
 		}
 
 		parts2 := strings.Fields(parts[1])
 		if len(parts) == 0 {
-			return 0, "", PageCountParseError
+			return 0, metadata.Title, PageCountParseError
 		}
 
 		n, err := strconv.Atoi(parts2[0])
-		if err != nil || n == 0 {
-			return 0, "", PageCountParseError
+		if err != nil {
+			return 0, metadata.Title, PageCountParseError
 		}
 
 		metadata.PageCount = n
-	}
-
-	if strings.ToLower(metadata.Title) == "chapter" && len(metadata.Series) > 0 {
-		metadata.Title = metadata.Series
 	}
 
 	return metadata.PageCount, metadata.Title, nil
