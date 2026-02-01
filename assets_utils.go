@@ -12,20 +12,15 @@ import (
 
 var CachedThumbnailNotFoundError = errors.New("cached thumbnail not found")
 
-func getCachedThumbnail(fname string) ([]byte, error) {
+func getCachedThumbnail(fname string) (string, error) {
 	cache, err := getCacheDir()
 	if err != nil {
-		return []byte{}, err
-	}
-
-	id, err := getUniqueId(fname)
-	if err != nil {
-		return []byte{}, err
+		return "", err
 	}
 
 	entries, err := os.ReadDir(cache)
 	if err != nil {
-		return []byte{}, err
+		return "", err
 	}
 
 	for _, entry := range entries {
@@ -33,12 +28,12 @@ func getCachedThumbnail(fname string) ([]byte, error) {
 			continue
 		}
 
-		if filepath.Base(entry.Name()) == id+"."+filepath.Ext(entry.Name()) {
-			return os.ReadFile(entry.Name())
+		if entry.Name() == fname {
+			return filepath.Join(cache, fname), nil
 		}
 	}
 
-	return []byte{}, CachedThumbnailNotFoundError
+	return "", CachedThumbnailNotFoundError
 }
 
 func getCacheDir() (string, error) {
@@ -48,7 +43,7 @@ func getCacheDir() (string, error) {
 	}
 
 	dir := path.Join(cache, "cosmic-reader/thumbnails")
-	err = os.MkdirAll(dir, os.ModeDir)
+	err = os.MkdirAll(dir, 0700)
 	return dir, err
 }
 
