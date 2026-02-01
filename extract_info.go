@@ -96,6 +96,10 @@ func extractArchive(fpath string) (*ComicInfo, error) {
 		cinfo.pageCount = count
 	}
 
+	if cinfo.title == "" {
+		cinfo.title = strings.TrimSuffix(filepath.Base(file.Name()), filepath.Ext(file.Name()))
+	}
+
 	if !errors.Is(err, ExtractionDoneError) {
 		return nil, err
 	}
