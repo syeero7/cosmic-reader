@@ -5,7 +5,6 @@ go 1.24.0
 require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/mholt/archives v0.1.5
-	github.com/sqids/sqids-go v0.4.1
 	github.com/wailsapp/wails/v2 v2.11.0
 )
 
