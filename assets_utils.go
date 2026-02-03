@@ -12,8 +12,15 @@ import (
 
 var CachedThumbnailNotFoundError = errors.New("cached thumbnail not found")
 
+type CacheDirName string
+
+const (
+	CacheThumbnails CacheDirName = "thumbnails"
+	CacheAppState   CacheDirName = "state"
+)
+
 func getCachedThumbnail(fname string) (string, error) {
-	cache, err := getCacheDir()
+	cache, err := getCacheDir(CacheThumbnails)
 	if err != nil {
 		return "", err
 	}
@@ -36,13 +43,24 @@ func getCachedThumbnail(fname string) (string, error) {
 	return "", CachedThumbnailNotFoundError
 }
 
-func getCacheDir() (string, error) {
+func getCacheDir(dname CacheDirName) (string, error) {
 	cache, err := os.UserCacheDir()
 	if err != nil {
 		return "", err
 	}
 
-	dir := path.Join(cache, "cosmic-reader/thumbnails")
+	dir := path.Join(cache, "cosmic-reader", string(dname))
+	err = os.MkdirAll(dir, 0700)
+	return dir, err
+}
+
+func getHomeDir() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	dir := path.Join(home, "cosmic-reader/archives")
 	err = os.MkdirAll(dir, 0700)
 	return dir, err
 }
@@ -53,18 +71,19 @@ func cacheThumbnail(finfo archives.FileInfo, fname string) (string, error) {
 		return "", err
 	}
 
+	defer file.Close()
 	img, err := imaging.Decode(file)
 	if err != nil {
 		return "", err
 	}
 
 	thumb := imaging.Thumbnail(img, 100, 150, imaging.CatmullRom)
-	tmbname := fname + "." + imaging.JPEG.String()
+	tmbname := fname + ".jpeg"
 	if err := imaging.Save(thumb, tmbname, imaging.JPEGQuality(80)); err != nil {
 		return "", err
 	}
 
-	cache, err := getCacheDir()
+	cache, err := getCacheDir(CacheThumbnails)
 	if err != nil {
 		return "", err
 	}
@@ -73,7 +92,7 @@ func cacheThumbnail(finfo archives.FileInfo, fname string) (string, error) {
 }
 
 func deleteCachedThumbnails(fname *string) error {
-	cache, err := getCacheDir()
+	cache, err := getCacheDir(CacheThumbnails)
 	if err != nil {
 		return err
 	}

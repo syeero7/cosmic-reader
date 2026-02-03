@@ -17,14 +17,6 @@ import (
 	"github.com/mholt/archives"
 )
 
-type ComicInfo struct {
-	id            string
-	pageCount     int
-	title         string
-	thumbnailPath string
-	comicPages    [][]byte
-}
-
 type ComicMetadata struct {
 	Title     string `xml:"Title"`
 	Series    string `xml:"Series"`
@@ -33,17 +25,10 @@ type ComicMetadata struct {
 	PageCount int    `xml:"PageCount"`
 }
 
-type ComicExtractOptions struct {
-	thumbnail bool
-	pageCount bool
-	title     bool
-	pages     []int
-}
-
 var PageCountParseError = errors.New("page count parsing failed")
 var ExtractionDoneError = errors.New("info extraction is done")
 
-func extractArchive(fpath string, opt *ComicExtractOptions) (*ComicInfo, error) {
+func extractComicInfo(fpath, id string) (*Archive, error) {
 	file, err := os.Open(fpath)
 	if err != nil {
 		return nil, err
@@ -51,56 +36,42 @@ func extractArchive(fpath string, opt *ComicExtractOptions) (*ComicInfo, error) 
 
 	defer file.Close()
 	ctx := context.Background()
-	format, _, err := archives.Identify(ctx, fpath, file)
+	extr, err := getExtractor(file, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	extr, ok := format.(archives.Extractor)
-	if !ok || !isSupported(file.Name()) {
-		return nil, fmt.Errorf("filetype '%s' is not supported", filepath.Ext(file.Name()))
-	}
-
-	if opt.thumbnail {
-		opt.title = true
-	}
-
 	count := 0
+	cinfo := new(Archive)
 	var thumbnail archives.FileInfo
-	comicPages := make([]archives.FileInfo, 0, len(opt.pages))
-	cinfo := new(ComicInfo)
 	thumbnailDone, pageCountDone, titleDone := false, false, false
 	err = extr.Extract(ctx, file, func(ctx context.Context, f archives.FileInfo) error {
-		if strings.ToLower(f.Name()) == "comicinfo.xml" && (opt.pageCount || opt.title) {
+		if strings.ToLower(f.Name()) == "comicinfo.xml" {
 			pageCount, title, err := parseComicInfoXML(f)
 			if err != nil && !errors.Is(err, PageCountParseError) {
 				return err
 			}
 
-			cinfo.title = title
+			cinfo.Title = title
 			titleDone = true
 			if pageCount > 0 {
-				cinfo.pageCount = pageCount
+				cinfo.PageCount = pageCount
 				pageCountDone = true
 			}
 		}
 
-		if getFileType(f.NameInArchive) == "image" && (opt.thumbnail || len(opt.pages) > 0 || (opt.pageCount && !pageCountDone)) {
+		if getFileType(f.NameInArchive) == "image" {
 			n, err := getPageIndex(f.NameInArchive)
 			if err != nil {
 				return err
 			}
 
-			if n == 1 && opt.thumbnail {
+			if n == 1 {
 				thumbnail = f
 				thumbnailDone = true
 			}
 
-			if len(opt.pages) > 0 && slices.Contains(opt.pages, n) {
-				comicPages = append(comicPages, f)
-			}
-
-			if opt.title == titleDone && opt.pageCount == pageCountDone && opt.thumbnail == thumbnailDone && len(opt.pages) == len(comicPages) {
+			if pageCountDone && thumbnailDone && titleDone {
 				return ExtractionDoneError
 			}
 
@@ -110,53 +81,95 @@ func extractArchive(fpath string, opt *ComicExtractOptions) (*ComicInfo, error) 
 		return nil
 	})
 
-	if !pageCountDone && opt.pageCount {
-		cinfo.pageCount = count
+	if !pageCountDone {
+		cinfo.PageCount = count
 	}
 
-	if cinfo.title == "" && opt.title {
-		cinfo.title = strings.TrimSuffix(filepath.Base(file.Name()), filepath.Ext(file.Name()))
+	if cinfo.Title == "" {
+		cinfo.Title = strings.TrimSuffix(filepath.Base(file.Name()), filepath.Ext(file.Name()))
 	}
 
 	if !errors.Is(err, ExtractionDoneError) {
 		return nil, err
 	}
 
-	if len(opt.pages) > 0 {
-		cinfo.comicPages = make([][]byte, len(opt.pages))
-		for _, page := range comicPages {
+	tmbpath, err := cacheThumbnail(thumbnail, id)
+	cinfo.Thumbnail = tmbpath
+	return cinfo, err
+}
 
-			byt, err := func() ([]byte, error) {
-				f, err := page.Open()
-				if err != nil {
-					return []byte{}, err
-				}
-
-				defer f.Close()
-				bt, err := io.ReadAll(f)
-				return bt, err
-			}()
-
-			if err != nil {
-				return nil, err
-			}
-
-			cinfo.comicPages = append(cinfo.comicPages, byt)
-		}
+func extractComicPages(fpath string, pages []int) ([][]byte, error) {
+	file, err := os.Open(fpath)
+	if err != nil {
+		return nil, err
 	}
 
-	if opt.thumbnail {
-		id, err := getUniqueId(cinfo.title)
+	defer file.Close()
+	ctx := context.Background()
+	extr, err := getExtractor(file, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	comicPages := make([]archives.FileInfo, 0, len(pages))
+	err = extr.Extract(ctx, file, func(ctx context.Context, f archives.FileInfo) error {
+		if getFileType(f.NameInArchive) == "image" {
+			n, err := getPageIndex(f.NameInArchive)
+			if err != nil {
+				return err
+			}
+
+			if slices.Contains(pages, n) {
+				comicPages = append(comicPages, f)
+			}
+
+			if len(pages) == len(comicPages) {
+				return ExtractionDoneError
+			}
+		}
+
+		return nil
+	})
+
+	if !errors.Is(err, ExtractionDoneError) {
+		return nil, err
+	}
+
+	cpages := make([][]byte, len(pages))
+	for _, page := range comicPages {
+		byt, err := func() ([]byte, error) {
+			f, err := page.Open()
+			if err != nil {
+				return []byte{}, err
+			}
+
+			defer f.Close()
+			bt, err := io.ReadAll(f)
+			return bt, err
+		}()
+
 		if err != nil {
 			return nil, err
 		}
 
-		cinfo.id = id
-		tmbpath, err := cacheThumbnail(thumbnail, id)
-		cinfo.thumbnailPath = tmbpath
+		cpages = append(cpages, byt)
 	}
 
-	return cinfo, err
+	return cpages, err
+}
+
+func getExtractor(file *os.File, ctx context.Context) (archives.Extractor, error) {
+	format, _, err := archives.Identify(ctx, file.Name(), file)
+	if err != nil {
+		return nil, err
+	}
+
+	extr, ok := format.(archives.Extractor)
+	if !ok || !isSupported(file.Name()) {
+		return nil, fmt.Errorf("filetype '%s' is not supported", filepath.Ext(file.Name()))
+	}
+
+	return extr, nil
 }
 
 func parseComicInfoXML(file archives.FileInfo) (int, string, error) {
