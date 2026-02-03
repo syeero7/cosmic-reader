@@ -60,13 +60,9 @@ func extractComicInfo(fpath, id string) (*Archive, error) {
 			}
 		}
 
-		if getFileType(f.NameInArchive) == "image" {
-			n, err := getPageIndex(f.NameInArchive)
-			if err != nil {
-				return err
-			}
-
-			if n == 1 {
+		if getFileType(f.Name()) == "image" {
+			count++
+			if count == 1 {
 				thumbnail = f
 				thumbnailDone = true
 			}
@@ -74,8 +70,6 @@ func extractComicInfo(fpath, id string) (*Archive, error) {
 			if pageCountDone && thumbnailDone && titleDone {
 				return ExtractionDoneError
 			}
-
-			count++
 		}
 
 		return nil
@@ -89,7 +83,7 @@ func extractComicInfo(fpath, id string) (*Archive, error) {
 		cinfo.Title = strings.TrimSuffix(filepath.Base(file.Name()), filepath.Ext(file.Name()))
 	}
 
-	if !errors.Is(err, ExtractionDoneError) {
+	if err != nil && !errors.Is(err, ExtractionDoneError) {
 		return nil, err
 	}
 
@@ -111,15 +105,12 @@ func extractComicPages(fpath string, pages []int) ([][]byte, error) {
 		return nil, err
 	}
 
+	count := 0
 	comicPages := make([]archives.FileInfo, 0, len(pages))
 	err = extr.Extract(ctx, file, func(ctx context.Context, f archives.FileInfo) error {
-		if getFileType(f.NameInArchive) == "image" {
-			n, err := getPageIndex(f.NameInArchive)
-			if err != nil {
-				return err
-			}
-
-			if slices.Contains(pages, n) {
+		if getFileType(f.Name()) == "image" {
+			count++
+			if slices.Contains(pages, count) {
 				comicPages = append(comicPages, f)
 			}
 
@@ -135,7 +126,7 @@ func extractComicPages(fpath string, pages []int) ([][]byte, error) {
 		return nil, err
 	}
 
-	cpages := make([][]byte, len(pages))
+	cpages := make([][]byte, 0, len(pages))
 	for _, page := range comicPages {
 		byt, err := func() ([]byte, error) {
 			f, err := page.Open()
@@ -155,7 +146,7 @@ func extractComicPages(fpath string, pages []int) ([][]byte, error) {
 		cpages = append(cpages, byt)
 	}
 
-	return cpages, err
+	return cpages, nil
 }
 
 func getExtractor(file *os.File, ctx context.Context) (archives.Extractor, error) {
@@ -230,9 +221,4 @@ func isSupported(fpath string) bool {
 		}
 	}
 	return false
-}
-
-func getPageIndex(name string) (int, error) {
-	parts := strings.Split(name, ".")
-	return strconv.Atoi(parts[0])
 }
