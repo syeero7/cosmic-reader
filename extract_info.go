@@ -43,7 +43,6 @@ func extractComicInfo(fpath, id string) (*Archive, error) {
 
 	count := 0
 	cinfo := new(Archive)
-	var thumbnail archives.FileInfo
 	thumbnailDone, pageCountDone, titleDone := false, false, false
 	err = extr.Extract(ctx, file, func(ctx context.Context, f archives.FileInfo) error {
 		if strings.ToLower(f.Name()) == "comicinfo.xml" {
@@ -63,7 +62,12 @@ func extractComicInfo(fpath, id string) (*Archive, error) {
 		if getFileType(f.Name()) == "image" {
 			count++
 			if count == 1 {
-				thumbnail = f
+				tmbpath, err := cacheThumbnail(&f, id)
+				if err != nil {
+					return err
+				}
+
+				cinfo.Thumbnail = tmbpath
 				thumbnailDone = true
 			}
 
@@ -87,8 +91,6 @@ func extractComicInfo(fpath, id string) (*Archive, error) {
 		return nil, err
 	}
 
-	tmbpath, err := cacheThumbnail(thumbnail, id)
-	cinfo.Thumbnail = tmbpath
 	return cinfo, err
 }
 

@@ -65,30 +65,27 @@ func getHomeDir() (string, error) {
 	return dir, err
 }
 
-func cacheThumbnail(finfo archives.FileInfo, fname string) (string, error) {
+func cacheThumbnail(finfo *archives.FileInfo, fname string) (string, error) {
 	file, err := finfo.Open()
 	if err != nil {
 		return "", err
 	}
 
 	defer file.Close()
-	img, err := imaging.Decode(file)
-	if err != nil {
-		return "", err
-	}
-
-	thumb := imaging.Thumbnail(img, 100, 150, imaging.CatmullRom)
-	tmbname := fname + ".jpeg"
-	if err := imaging.Save(thumb, tmbname, imaging.JPEGQuality(80)); err != nil {
-		return "", err
-	}
-
 	cache, err := getCacheDir(CacheThumbnails)
 	if err != nil {
 		return "", err
 	}
 
-	return filepath.Join(cache, tmbname), nil
+	tmbpath := filepath.Join(cache, fname+".jpeg")
+	img, err := imaging.Decode(file)
+	if err != nil {
+		return "", err
+	}
+
+	thumb := imaging.Resize(img, 0, 230, imaging.Linear)
+	err = imaging.Save(thumb, tmbpath, imaging.JPEGQuality(80))
+	return tmbpath, err
 }
 
 func deleteCachedThumbnails(fname *string) error {
