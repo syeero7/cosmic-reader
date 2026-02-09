@@ -5,14 +5,11 @@ import (
 	"net/http"
 )
 
-type AssetsLoader struct {
-	http.ServeMux
-}
-
-func newAssetsServer() *AssetsLoader {
-	as := new(AssetsLoader)
+func newAssetsServer(next http.Handler) http.Handler {
+	as := http.NewServeMux()
 	as.HandleFunc("/thumbnails/{image}", thumbnailHandler)
 	as.HandleFunc("/comics/{comicId}/pages/{image}", comicPageHandler)
+	as.Handle("/", next)
 	return as
 }
 
