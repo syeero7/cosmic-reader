@@ -26,6 +26,8 @@ type StateManager struct {
 	state *AppState
 }
 
+var storage StateManager
+
 func (s *StateManager) setLibraryDir(dpath string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -36,7 +38,7 @@ func (s *StateManager) setLibraryDir(dpath string) error {
 	}
 
 	state.Settings.LibraryDir = dpath
-	return s.save()
+	return s.save(state)
 }
 
 func (s *StateManager) getArchive(id string) (*Archive, error) {
@@ -70,7 +72,7 @@ func (s *StateManager) removeArchive(id string) error {
 	}
 
 	delete(state.Archives, id)
-	return s.save()
+	return s.save(state)
 }
 
 func (s *StateManager) addArchive(id string, archive Archive, replace bool) error {
@@ -92,11 +94,11 @@ func (s *StateManager) addArchive(id string, archive Archive, replace bool) erro
 	}
 
 	state.Archives[id] = archive
-	return s.save()
+	return s.save(state)
 }
 
-func (s *StateManager) save() error {
-	data, err := json.MarshalIndent(s.state, "", " ")
+func (s *StateManager) save(state *AppState) error {
+	data, err := json.MarshalIndent(state, "", " ")
 	if err != nil {
 		return err
 	}
@@ -132,29 +134,25 @@ func (s *StateManager) getState() (*AppState, error) {
 		return nil, err
 	}
 
-	var appState *AppState
+	var state AppState
 	fpath := filepath.Join(cache, "state.json")
 	file, err := os.Open(fpath)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return nil, err
-		}
-
-		nws, err := s.getDefaultState()
-		if err != nil {
-			return nil, err
-		}
-		appState = nws
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
 	}
 
-	if file != nil && appState == nil {
+	if err == nil && file != nil {
 		defer file.Close()
-		if err := json.NewDecoder(file).Decode(appState); err != nil {
+		if err := json.NewDecoder(file).Decode(&state); err != nil {
 			return nil, err
 		}
 	}
 
-	return appState, nil
+	if os.IsNotExist(err) && (file == nil || state.Archives == nil) {
+		return s.getDefaultState()
+	}
+
+	return &state, nil
 }
 
 func (s *StateManager) getDefaultState() (*AppState, error) {
