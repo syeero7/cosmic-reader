@@ -3,10 +3,12 @@ import type { main } from "@wails/go/models";
 import type { TargetedInputEvent } from "preact";
 import { useState } from "preact/compat";
 import { useComics } from "./ComicProvider";
+import { useRouter } from "./RouterProvider";
 
 export function Home() {
   const [filterQuery, setFilterQuery] = useState("");
   const { comics, dispatch } = useComics();
+  const router = useRouter();
 
   const filterComics = () => {
     let timer: NodeJS.Timeout | undefined;
@@ -31,10 +33,13 @@ export function Home() {
   const deleteComic = (id: string) => {
     return async () => {
       await DeleteComic(id);
-      dispatch({
-        type: "delete_comic",
-        payload: id as ReturnType<typeof crypto.randomUUID>,
-      });
+      dispatch({ type: "delete_comic", payload: id as ReturnType<typeof crypto.randomUUID> });
+    };
+  };
+
+  const openComic = (id: string) => {
+    return () => {
+      router.navigateTo(`comic-id: ${id as ReturnType<typeof crypto.randomUUID>}`);
     };
   };
 
@@ -54,20 +59,32 @@ export function Home() {
 
       <div>
         {archives.map((c) => (
-          <ComicCard key={c.id} comic={c} deleteFn={deleteComic(c.id)} />
+          <ComicCard
+            key={c.id}
+            comic={c}
+            deleteFn={deleteComic(c.id)}
+            navigateFn={openComic(c.id)}
+          />
         ))}
       </div>
     </main>
   );
 }
 
-function ComicCard({ comic, deleteFn }: { comic: main.ArchiveInfo; deleteFn: () => void }) {
+type ComicCardProps = {
+  comic: main.ArchiveInfo;
+  deleteFn: () => void;
+  navigateFn: () => void;
+};
+
+function ComicCard({ comic, deleteFn, navigateFn }: ComicCardProps) {
   return (
     <article>
       <button onClick={deleteFn}>delete</button>
       <img src={`/thumbnails/${comic.thumbnail}`} alt={`${comic.title} cover`} />
       <p>{comic.title}</p>
       {/* 10ch max width title */}
+      <button onClick={navigateFn}>open {comic.title}</button>
     </article>
   );
 }
