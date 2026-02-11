@@ -1,0 +1,4 @@
+/* temporary background color to fix webview flickering */
+html {
+  background-color: #fff;
+}
