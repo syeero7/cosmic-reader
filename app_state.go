@@ -2,7 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sync"
@@ -71,11 +74,20 @@ func (s *StateManager) removeArchive(id string) error {
 		return fmt.Errorf("archive: %s not found", id)
 	}
 
+	fpath, err := s.findArchive(id)
+	if err != nil {
+		return err
+	}
+
+	if err := os.Remove(fpath); err != nil {
+		return err
+	}
+
 	delete(state.Archives, id)
 	return s.save(state)
 }
 
-func (s *StateManager) addArchive(id string, archive Archive, replace bool) error {
+func (s *StateManager) addArchive(id, fpath string, archive Archive, replace bool) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -91,6 +103,10 @@ func (s *StateManager) addArchive(id string, archive Archive, replace bool) erro
 
 	if replace && !ok {
 		return fmt.Errorf("archive: %s not found", id)
+	}
+
+	if err := s.copyArchive(id, fpath); err != nil {
+		return err
 	}
 
 	state.Archives[id] = archive
@@ -165,4 +181,58 @@ func (s *StateManager) getDefaultState() (*AppState, error) {
 	state.Settings.LibraryDir = home
 	state.Archives = make(map[string]Archive)
 	return state, nil
+}
+
+func (s *StateManager) copyArchive(id, fpath string) error {
+	home, err := getHomeDir()
+	if err != nil {
+		return err
+	}
+
+	src, err := os.Open(fpath)
+	if err != nil {
+		return err
+	}
+
+	defer src.Close()
+	dst, err := os.Create(filepath.Join(home, id+filepath.Ext(fpath)))
+	if err != nil {
+		return err
+	}
+
+	defer dst.Close()
+	if _, err := io.Copy(dst, src); err != nil {
+		return err
+	}
+
+	return dst.Sync()
+}
+
+var ArchiveFoundError = errors.New("archive found")
+
+func (s *StateManager) findArchive(id string) (string, error) {
+	home, err := getHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	fpath := ""
+	err = filepath.WalkDir(home, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !entry.IsDir() && entry.Name() == id+filepath.Ext(entry.Name()) {
+			fpath = path
+			return ArchiveFoundError
+		}
+
+		return nil
+	})
+
+	if err != nil && !errors.Is(err, ArchiveFoundError) {
+		return "", err
+	}
+
+	return fpath, nil
 }

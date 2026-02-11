@@ -50,7 +50,7 @@ func (a *App) AddComicBook(id, fpath string) *Archive {
 		log.Fatal(err)
 	}
 
-	if err := storage.addArchive(id, *arch, false); err != nil {
+	if err := storage.addArchive(id, fpath, *arch, false); err != nil {
 		log.Fatal(err)
 	}
 
