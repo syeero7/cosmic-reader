@@ -44,4 +44,5 @@ func comicPageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	streamComicPage(w, comid, pageN)
 }

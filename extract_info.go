@@ -8,9 +8,9 @@ import (
 	"io"
 	"log/slog"
 	"mime"
+	"net/http"
 	"os"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -94,29 +94,60 @@ func extractComicInfo(fpath, id string) (*Archive, error) {
 	return cinfo, err
 }
 
-func extractComicPages(fpath string, pages []int) ([][]byte, error) {
+// TODO: optimize page retrieving. optimize comic archive on adding for ez page retrieval
+
+// archive length - 1 (comicInfo.xml) === total page count
+// width := 6
+// value := 12
+// padded := fmt.Sprintf("%0*d", width, value)
+// func countDigits(i int) int {
+// 	if i == 0 {
+// 		return 1
+// 	}
+//
+// 	count := 0
+// 	for i >= 0 {
+// 		i /= 10
+// 		count++
+// 	}
+// 	return count
+// }
+
+func streamComicPage(w http.ResponseWriter, id string, page int) error {
+	fpath, err := storage.findArchive(id)
+	if err != nil {
+		return err
+	}
+
 	file, err := os.Open(fpath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	defer file.Close()
 	ctx := context.Background()
 	extr, err := getExtractor(file, ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	count := 0
-	comicPages := make([]archives.FileInfo, 0, len(pages))
 	err = extr.Extract(ctx, file, func(ctx context.Context, f archives.FileInfo) error {
 		if getFileType(f.Name()) == "image" {
 			count++
-			if slices.Contains(pages, count) {
-				comicPages = append(comicPages, f)
-			}
+			if count == page {
+				img, err := f.Open()
+				if err != nil {
+					return err
+				}
 
-			if len(pages) == len(comicPages) {
+				defer img.Close()
+				w.Header().Set("Cache-Control", "max-age=604800")
+				w.Header().Set("Content-Type", mime.TypeByExtension(filepath.Ext(f.Name())))
+				if _, err := io.Copy(w, img); err != nil {
+					return err
+				}
+
 				return ExtractionDoneError
 			}
 		}
@@ -124,31 +155,11 @@ func extractComicPages(fpath string, pages []int) ([][]byte, error) {
 		return nil
 	})
 
-	if !errors.Is(err, ExtractionDoneError) {
-		return nil, err
+	if err != nil && !errors.Is(err, ExtractionDoneError) {
+		return err
 	}
 
-	cpages := make([][]byte, 0, len(pages))
-	for _, page := range comicPages {
-		byt, err := func() ([]byte, error) {
-			f, err := page.Open()
-			if err != nil {
-				return []byte{}, err
-			}
-
-			defer f.Close()
-			bt, err := io.ReadAll(f)
-			return bt, err
-		}()
-
-		if err != nil {
-			return nil, err
-		}
-
-		cpages = append(cpages, byt)
-	}
-
-	return cpages, nil
+	return nil
 }
 
 func getExtractor(file *os.File, ctx context.Context) (archives.Extractor, error) {
