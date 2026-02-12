@@ -1,7 +1,7 @@
 import { AddComicBook, DeleteComic, SelectFile } from "@wails/go/main/App";
 import type { main } from "@wails/go/models";
 import type { TargetedInputEvent } from "preact";
-import { useState } from "preact/compat";
+import { useRef, useState } from "preact/compat";
 import { useComics } from "./ComicProvider";
 import { useRouter } from "./RouterProvider";
 
@@ -9,16 +9,14 @@ export function Home() {
   const [filterQuery, setFilterQuery] = useState("");
   const { comics, dispatch } = useComics();
   const router = useRouter();
+  const timerRef = useRef<NodeJS.Timeout | undefined>();
 
-  const filterComics = () => {
-    let timer: NodeJS.Timeout | undefined;
-    return (e: TargetedInputEvent<HTMLInputElement>) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        const target = e.target as HTMLInputElement;
-        setFilterQuery(target.value.trim());
-      }, 300);
-    };
+  const filterComics = (e: TargetedInputEvent<HTMLInputElement>) => {
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      const target = e.target as HTMLInputElement;
+      setFilterQuery(target.value.trim());
+    }, 300);
   };
 
   const addComic = async () => {
@@ -53,7 +51,7 @@ export function Home() {
         <button onClick={addComic}>add</button>
         <div>
           <span>search</span>
-          <input type="text" onChange={filterComics()} value={filterQuery} />
+          <input type="text" onChange={filterComics} value={filterQuery} />
         </div>
       </div>
 

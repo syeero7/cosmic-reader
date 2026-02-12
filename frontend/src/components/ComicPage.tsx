@@ -1,6 +1,6 @@
 import type { main } from "@wails/go/models";
 import type { TargetedInputEvent } from "preact";
-import { type Dispatch, type StateUpdater, useState } from "preact/hooks";
+import { type Dispatch, type StateUpdater, useRef, useState } from "preact/hooks";
 import { useComics } from "./ComicProvider";
 import { useRouter } from "./RouterProvider";
 
@@ -43,6 +43,8 @@ type MenuProps = {
 };
 
 function ComicMenu({ pageCount, pages, setPages, navigateToHome }: MenuProps) {
+  const timerRef = useRef<NodeJS.Timeout | undefined>();
+
   const toNextPage = () => {
     if (pages.current === pageCount) return;
     setPages((p) => ({ prev: p.current, current: p.next, next: p.next + 1 }));
@@ -53,16 +55,14 @@ function ComicMenu({ pageCount, pages, setPages, navigateToHome }: MenuProps) {
     setPages((p) => ({ prev: p.prev - 1, current: p.prev, next: p.current }));
   };
 
-  const toAnyPage = () => {
-    let timer: NodeJS.Timeout | undefined;
-    return (e: TargetedInputEvent<HTMLInputElement>) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        const pageN = Number((e.target as HTMLInputElement).value);
-        if (Number.isNaN(pageN) || pageN <= 0 || pageN > pageCount) return;
-        setPages({ prev: pageN - 1, current: pageN, next: pageN === pageCount ? 0 : pageN + 1 });
-      }, 250);
-    };
+  const toAnyPage = (e: TargetedInputEvent<HTMLInputElement>) => {
+    clearTimeout(timerRef.current);
+    const pageN = Number((e.target as HTMLInputElement).value);
+    if (Number.isNaN(pageN) || pageN <= 0 || pageN > pageCount) return;
+
+    timerRef.current = setTimeout(() => {
+      setPages({ prev: pageN - 1, current: pageN, next: pageN === pageCount ? 0 : pageN + 1 });
+    }, 300);
   };
 
   // TODO: add screen rotate (https://developer.mozilla.org/en-US/docs/Web/API/ScreenOrientation/lock) n menu lock
@@ -70,7 +70,7 @@ function ComicMenu({ pageCount, pages, setPages, navigateToHome }: MenuProps) {
   return (
     <menu>
       <button onClick={navigateToHome}>Home</button>
-      <input type="range" min={1} defaultValue={1} max={pageCount} onChange={toAnyPage()} />
+      <input type="range" min={1} defaultValue={1} max={pageCount} onChange={toAnyPage} />
       <div>
         <button>rotate left</button>
         <button>rotate right</button>
