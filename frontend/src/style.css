@@ -1,4 +1,91 @@
-/* temporary background color to fix webview flickering */
+*,
+::after,
+::before {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+}
+
 html {
   background-color: #fff;
+}
+
+body {
+  min-height: 100vh;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+}
+
+img {
+  display: block;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.homepage {
+  header {
+    display: flex;
+    justify-content: right;
+    gap: 1em;
+    align-items: center;
+    max-height: 3.5em;
+    padding: 0.5em 0.75em;
+
+    input {
+      flex: 1;
+      padding: 0.25em;
+      min-height: 2em;
+      margin-left: 5em;
+    }
+  }
+}
+
+.comic-grid {
+  display: grid;
+  gap: 0.75em;
+  padding: 0.75em;
+  --col-width: 150px;
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--col-width), 100%), 1fr));
+}
+
+.comic-card {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  max-width: var(--col-width);
+  gap: 0.25em;
+
+  button {
+    position: absolute;
+    right: 0;
+    z-index: 2;
+  }
+
+  a {
+    text-decoration: none;
+    font-size: 0.85em;
+    color: inherit;
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+  }
 }

@@ -2,6 +2,8 @@ import { AddComicBook, DeleteComic, SelectFile } from "@wails/go/main/App";
 import type { main } from "@wails/go/models";
 import type { TargetedInputEvent } from "preact";
 import { useRef, useState } from "preact/compat";
+import addImg from "@/assets/add-svgrepo-com.svg";
+import deleteImg from "@/assets/delete-filled-svgrepo-com.svg";
 import { useComics } from "./ComicProvider";
 import { useRouter } from "./RouterProvider";
 
@@ -46,16 +48,16 @@ export function Home() {
     : comics.filter((c) => c.title.toLowerCase().includes(filterQuery.toLowerCase()));
 
   return (
-    <main>
-      <div>
-        <button onClick={addComic}>add</button>
-        <div>
-          <span>search</span>
-          <input type="text" onChange={filterComics} value={filterQuery} />
-        </div>
-      </div>
+    <main className="homepage">
+      <header>
+        <h1>Library</h1>
+        <input type="search" onChange={filterComics} value={filterQuery} placeholder="Search..." />
+        <button onClick={addComic} title="add comic book">
+          <img alt="add" src={addImg} width={36} height={36} />
+        </button>
+      </header>
 
-      <div>
+      <div className="comic-grid">
         {archives.map((c) => (
           <ComicCard
             key={c.id}
@@ -77,12 +79,22 @@ type ComicCardProps = {
 
 function ComicCard({ comic, deleteFn, navigateFn }: ComicCardProps) {
   return (
-    <article>
-      <button onClick={deleteFn}>delete</button>
+    <article className="comic-card">
+      <button onClick={deleteFn} title={`delete ${comic.title}`}>
+        <img alt="delete" src={deleteImg} width={24} height={24} />
+      </button>
+
       <img src={`/thumbnails/${comic.thumbnail}`} alt={`${comic.title} cover`} />
-      <p>{comic.title}</p>
-      {/* 10ch max width title */}
-      <button onClick={navigateFn}>open {comic.title}</button>
+      <a
+        title={comic.title}
+        href={`/comics/${comic.id}`}
+        onClick={(e) => {
+          e.preventDefault();
+          navigateFn();
+        }}
+      >
+        {comic.title}
+      </a>
     </article>
   );
 }
