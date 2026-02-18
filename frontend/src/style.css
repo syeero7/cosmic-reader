@@ -7,6 +7,10 @@
 }
 
 :root {
+  --comic-page-width: 100vw;
+  --comic-page-height: 100vh;
+  --comic-page-orientation: unset;
+  --comic-page-url: unset;
 }
 
 html {
@@ -86,6 +90,83 @@ input {
       position: absolute;
       inset: 0;
       z-index: 1;
+    }
+  }
+}
+
+.comic-page {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  .page-container {
+    position: relative;
+    background-image: var(--comic-page-url);
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: var(--comic-page-width);
+    height: var(--comic-page-height);
+    transform: var(--comic-page-orientation);
+
+    menu {
+      position: absolute;
+      width: var(--comic-page-width);
+      bottom: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding-block: 1.5em;
+      background: transparent;
+
+      .page-menu {
+        opacity: 0;
+        display: grid;
+        gap: 0.4em;
+        min-width: 250px;
+        padding: 0.6em;
+        background-color: lightgray;
+        border-radius: 0.5em;
+        transition: opacity 0.2s ease-in-out;
+
+        &:hover {
+          opacity: 1;
+        }
+      }
+
+      .page-input {
+        display: flex;
+        gap: 0.4em;
+
+        input {
+          cursor: pointer;
+          flex: 1;
+          outline: none;
+        }
+
+        span {
+          padding: 0.2em;
+        }
+      }
+
+      .menu-btns {
+        display: flex;
+        gap: 0.4em;
+
+        button {
+          line-height: 0;
+          padding: 0.15em;
+          border-radius: 0.5em;
+        }
+      }
+
+      button > svg {
+        width: 2em;
+        height: 2em;
+        fill: #000;
+      }
     }
   }
 }
