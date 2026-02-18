@@ -17,6 +17,7 @@
   --comic-page-height: 100vh;
   --comic-page-orientation: unset;
   --comic-page-url: unset;
+  --page-menu-visibility: 0;
 }
 
 body {
@@ -159,7 +160,7 @@ input {
       background: transparent;
 
       .page-menu {
-        opacity: 0;
+        opacity: var(--page-menu-visibility);
         display: grid;
         gap: 0.4em;
         min-width: 250px;
