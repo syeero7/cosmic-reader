@@ -18,7 +18,8 @@
     "rules": {
       "recommended": true,
       "a11y": {
-        "useButtonType": "warn"
+        "useButtonType": "warn",
+        "noSvgWithoutTitle": "warn"
       }
     }
   },
