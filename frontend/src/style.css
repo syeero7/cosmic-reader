@@ -7,23 +7,29 @@
 }
 
 :root {
+  --background: oklch(0.2 0 0);
+  --foreground: oklch(0.99 0 0);
+  --primary: oklch(0.56 0 0);
+  --secondary: oklch(0.61 0.11 222);
+  --accent: oklch(0.64 0.21 25);
+
   --comic-page-width: 100vw;
   --comic-page-height: 100vh;
   --comic-page-orientation: unset;
   --comic-page-url: unset;
 }
 
-html {
-  background-color: #fff;
-}
-
 body {
   min-height: 100vh;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
 }
 
 button {
   cursor: pointer;
   border: none;
+  background-color: var(--foreground);
 }
 
 button:has(svg) {
@@ -46,19 +52,33 @@ input {
     gap: 1em;
     align-items: center;
     max-height: 3.5em;
-    padding: 0.5em 0.75em;
+    padding-block: 1em 0.75em;
+    padding-inline: 0.75em;
 
     input {
       flex: 1;
       padding: 0.25em;
       min-height: 2em;
       margin-left: 5em;
+      border-radius: 0.5em;
     }
 
-    button > svg {
-      fill: #000;
-      width: 2.5em;
-      height: 2.5em;
+    button {
+      border-radius: 0.5em;
+      opacity: 0.9;
+      transition: opacity 0.2s ease-in-out;
+
+      &:hover,
+      &:focus-within {
+        opacity: 1;
+        filter: drop-shadow(0 0 0.5em var(--foreground));
+      }
+
+      svg {
+        fill: var(--background);
+        width: 2.05em;
+        height: 2.05em;
+      }
     }
   }
 }
@@ -66,7 +86,7 @@ input {
 .comic-grid {
   display: grid;
   gap: 0.75em;
-  padding: 0.75em;
+  padding: 0.75em 1em;
   --col-width: 150px;
   grid-template-columns: repeat(auto-fill, minmax(min(var(--col-width), 100%), 1fr));
 }
@@ -80,11 +100,12 @@ input {
 
   button {
     position: absolute;
+    background-color: transparent;
     right: 0;
     z-index: 2;
 
     svg {
-      fill: #000;
+      fill: var(--accent);
       width: 1.5em;
       height: 1.5em;
     }
@@ -143,7 +164,7 @@ input {
         gap: 0.4em;
         min-width: 250px;
         padding: 0.6em;
-        background-color: lightgray;
+        background-color: hsla(from var(--primary) h s l / 0.6);
         border-radius: 0.5em;
         transition: opacity 0.2s ease-in-out;
 
@@ -164,6 +185,8 @@ input {
 
         span {
           padding: 0.2em;
+          min-width: 3ch;
+          font-weight: 500;
         }
       }
 
@@ -174,6 +197,14 @@ input {
         button {
           padding: 0.15em;
           border-radius: 0.5em;
+          opacity: 0.9;
+          transition: opacity 0.2s ease-in-out;
+
+          &:hover,
+          &:focus-within {
+            opacity: 1;
+            filter: drop-shadow(0 0 0.5em var(--foreground));
+          }
         }
       }
 
