@@ -2,8 +2,6 @@ import { AddComicBook, DeleteComic, SelectFile } from "@wails/go/main/App";
 import type { main } from "@wails/go/models";
 import type { TargetedInputEvent } from "preact";
 import { useRef, useState } from "preact/compat";
-import addImg from "@/assets/add-svgrepo-com.svg";
-import deleteImg from "@/assets/delete-filled-svgrepo-com.svg";
 import { useComics } from "./ComicProvider";
 import { useRouter } from "./RouterProvider";
 
@@ -53,7 +51,9 @@ export function Home() {
         <h1>Library</h1>
         <input type="search" onChange={filterComics} value={filterQuery} placeholder="Search..." />
         <button onClick={addComic} title="add comic book">
-          <img alt="add" src={addImg} width={36} height={36} />
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+            <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z" />
+          </svg>
         </button>
       </header>
 
@@ -81,7 +81,9 @@ function ComicCard({ comic, deleteFn, navigateFn }: ComicCardProps) {
   return (
     <article className="comic-card">
       <button onClick={deleteFn} title={`delete ${comic.title}`}>
-        <img alt="delete" src={deleteImg} width={24} height={24} />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+          <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm80-160h80v-360h-80v360Zm160 0h80v-360h-80v360Z" />
+        </svg>
       </button>
 
       <img src={`/thumbnails/${comic.thumbnail}`} alt={`${comic.title} cover`} />

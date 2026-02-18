@@ -26,6 +26,10 @@ button {
   border: none;
 }
 
+button:has(svg) {
+  line-height: 0;
+}
+
 img {
   display: block;
 }
@@ -50,6 +54,12 @@ input {
       min-height: 2em;
       margin-left: 5em;
     }
+
+    button > svg {
+      fill: #000;
+      width: 2.5em;
+      height: 2.5em;
+    }
   }
 }
 
@@ -72,6 +82,12 @@ input {
     position: absolute;
     right: 0;
     z-index: 2;
+
+    svg {
+      fill: #000;
+      width: 1.5em;
+      height: 1.5em;
+    }
   }
 
   a {
@@ -156,7 +172,6 @@ input {
         gap: 0.4em;
 
         button {
-          line-height: 0;
           padding: 0.15em;
           border-radius: 0.5em;
         }
