@@ -148,6 +148,7 @@ input {
     width: var(--comic-page-width);
     height: var(--comic-page-height);
     transform: var(--comic-page-orientation);
+    transition: background-image linear 0.2s;
 
     menu {
       position: absolute;
