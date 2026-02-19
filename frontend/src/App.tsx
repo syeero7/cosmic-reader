@@ -2,12 +2,15 @@ import { ComicPage } from "./components/ComicPage";
 import { ComicProvider } from "./components/ComicProvider";
 import { Home } from "./components/Home";
 import { RouterProvider, useRouter } from "./components/RouterProvider";
+import { ShortcutProvider } from "./components/ShortcutProvider";
 
 export function App() {
   return (
     <RouterProvider>
       <ComicProvider>
-        <RouterController />
+        <ShortcutProvider>
+          <RouterController />
+        </ShortcutProvider>
       </ComicProvider>
     </RouterProvider>
   );
