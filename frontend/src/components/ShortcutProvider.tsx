@@ -24,11 +24,12 @@ export function useShortcut(combo: KeyCombo, fn: () => void) {
   useEffect(() => {
     ctx.register(combo, fn);
     return () => ctx.unregister(combo);
-  }, []);
+  }, [fn]);
 }
 
 export function ShortcutProvider({ children }: PropsWithChildren) {
   const keyMapRef = useRef<Map<KeyCombo, () => void>>(new Map());
+  const throttleRef = useRef(0);
 
   useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
@@ -39,8 +40,19 @@ export function ShortcutProvider({ children }: PropsWithChildren) {
       keys.push(e.key);
 
       const callbackFn = keyMapRef.current.get(keys.join("+") as KeyCombo);
-      if (callbackFn) {
-        e.preventDefault();
+      if (!callbackFn) return;
+      e.preventDefault();
+
+      if (!e.repeat) {
+        throttleRef.current = Date.now();
+        callbackFn();
+        return;
+      }
+
+      const delay = 220;
+      const now = Date.now();
+      if (now - throttleRef.current >= delay) {
+        throttleRef.current = now;
         callbackFn();
       }
     };
