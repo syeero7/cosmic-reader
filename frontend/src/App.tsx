@@ -1,8 +1,9 @@
+import { Quit, WindowFullscreen, WindowIsFullscreen, WindowUnfullscreen } from "@wails/runtime";
 import { ComicPage } from "./components/ComicPage";
 import { ComicProvider } from "./components/ComicProvider";
 import { Home } from "./components/Home";
 import { RouterProvider, useRouter } from "./components/RouterProvider";
-import { ShortcutProvider } from "./components/ShortcutProvider";
+import { ShortcutProvider, useShortcut } from "./components/ShortcutProvider";
 
 export function App() {
   return (
@@ -26,5 +27,17 @@ function RouterController() {
     Route = () => <ComicPage comicId={comicId} />;
   }
 
+  useShortcut("Control+Shift+f", toggleFullscreen);
+  useShortcut("Control+q", Quit);
+
   return <Route />;
+}
+
+async function toggleFullscreen() {
+  if (await WindowIsFullscreen()) {
+    WindowUnfullscreen();
+    return;
+  }
+
+  WindowFullscreen();
 }

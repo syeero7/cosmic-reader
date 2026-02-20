@@ -7,12 +7,13 @@ import {
 } from "preact/compat";
 
 type ArrowKeys = "ArrowDown" | "ArrowUp" | "ArrowLeft" | "ArrowRight";
-type KeyCombo = "Control+Shift+f" | ArrowKeys | `Alt+${ArrowKeys}`;
+type KeyCombo = "Control+Shift+f" | "Control+q" | "Alt+l" | ArrowKeys | `Alt+${ArrowKeys}`;
 type Keys = "Control" | "Shift" | "Alt" | (string & {});
+type LowercasedCombo = Lowercase<KeyCombo>;
 
 type ShortcutCtx = {
-  register: (combo: KeyCombo, fn: () => void) => void;
-  unregister: (combo: KeyCombo) => void;
+  register: (combo: LowercasedCombo, fn: () => void) => void;
+  unregister: (combo: LowercasedCombo) => void;
 };
 
 const ShortcutContext = createContext<ShortcutCtx | null>(null);
@@ -22,24 +23,19 @@ export function useShortcut(combo: KeyCombo, fn: () => void) {
   if (!ctx) throw new Error("useShortcut hook must be used within a child of ShortcutProvider");
 
   useEffect(() => {
-    ctx.register(combo, fn);
-    return () => ctx.unregister(combo);
+    const lowercased = combo.toLowerCase() as LowercasedCombo;
+    ctx.register(lowercased, fn);
+    return () => ctx.unregister(lowercased);
   }, [fn]);
 }
 
 export function ShortcutProvider({ children }: PropsWithChildren) {
-  const keyMapRef = useRef<Map<KeyCombo, () => void>>(new Map());
+  const keyMapRef = useRef<Map<LowercasedCombo, () => void>>(new Map());
   const throttleRef = useRef(0);
 
   useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
-      const keys: Keys[] = [];
-      if (e.ctrlKey) keys.push("Control");
-      if (e.shiftKey) keys.push("Shift");
-      if (e.altKey) keys.push("Alt");
-      keys.push(e.key);
-
-      const callbackFn = keyMapRef.current.get(keys.join("+") as KeyCombo);
+      const callbackFn = keyMapRef.current.get(buildKeyCombo(e));
       if (!callbackFn) return;
       e.preventDefault();
 
@@ -67,4 +63,14 @@ export function ShortcutProvider({ children }: PropsWithChildren) {
   return (
     <ShortcutContext.Provider value={{ register, unregister }}>{children}</ShortcutContext.Provider>
   );
+}
+
+function buildKeyCombo(e: KeyboardEvent) {
+  const keys: Keys[] = [];
+  if (e.ctrlKey) keys.push("Control");
+  if (e.shiftKey) keys.push("Shift");
+  if (e.altKey) keys.push("Alt");
+  keys.push(e.key);
+
+  return keys.join("+").toLowerCase() as LowercasedCombo;
 }

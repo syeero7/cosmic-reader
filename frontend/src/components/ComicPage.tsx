@@ -3,6 +3,7 @@ import type { TargetedInputEvent } from "preact";
 import { type Dispatch, type StateUpdater, useRef, useState } from "preact/hooks";
 import { useComics } from "./ComicProvider";
 import { useRouter } from "./RouterProvider";
+import { useShortcut } from "./ShortcutProvider";
 
 type ImageOrientation = 0 | 90 | -90 | 180;
 
@@ -68,6 +69,16 @@ function ComicMenu({ pageCount, pages, setPages, setOrientation, navigateToHome 
     setPages((p) => ({ prev: p.prev - 1, current: p.prev, next: p.current }));
   };
 
+  useShortcut("ArrowUp", toPreviousPage);
+  useShortcut("ArrowRight", toNextPage);
+  useShortcut("ArrowDown", toNextPage);
+  useShortcut("ArrowLeft", toPreviousPage);
+
+  useShortcut("Alt+ArrowUp", () => setOrientation(180)); // upside down
+  useShortcut("Alt+ArrowRight", () => setOrientation(90)); // clockwise
+  useShortcut("Alt+ArrowDown", () => setOrientation(0)); // normal
+  useShortcut("Alt+ArrowLeft", () => setOrientation(-90)); // counter clockwise
+
   const toAnyPage = (e: TargetedInputEvent<HTMLInputElement>) => {
     clearTimeout(timerRef.current);
     const pageN = Number((e.target as HTMLInputElement).value);
@@ -82,7 +93,9 @@ function ComicMenu({ pageCount, pages, setPages, setOrientation, navigateToHome 
     }, 300);
   };
 
-  const handleMenuLock = () => setLockState((l) => (l === "lock" ? "unlock" : "lock"));
+  const toggleMenuVisibility = () => setLockState((l) => (l === "lock" ? "unlock" : "lock"));
+  useShortcut("Alt+l", toggleMenuVisibility);
+
   const rotateLeft = () => setOrientation((o) => getOrientation(o, "L"));
   const rotateRight = () => setOrientation((o) => getOrientation(o, "R"));
 
@@ -110,7 +123,7 @@ function ComicMenu({ pageCount, pages, setPages, setOrientation, navigateToHome 
               <path d="M522-80v-82q34-5 66.5-18t61.5-34l56 58q-42 32-88 51.5T522-80Zm-80 0Q304-98 213-199.5T122-438q0-75 28.5-140.5t77-114q48.5-48.5 114-77T482-798h6l-62-62 56-58 160 160-160 160-56-56 64-64h-8q-117 0-198.5 81.5T202-438q0 104 68 182.5T442-162v82Zm322-134-58-56q21-29 34-61.5t18-66.5h82q-5 50-24.5 96T764-214Zm76-264h-82q-5-34-18-66.5T706-606l58-56q32 39 51 86t25 98Z" />
             </svg>
           </button>
-          <button title={lockState} onClick={handleMenuLock}>
+          <button title={lockState} onClick={toggleMenuVisibility}>
             {lockState === "lock" ? (
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
                 <path d="M240-640h360v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85h-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640Zm0 480h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM240-160v-400 400Z" />
