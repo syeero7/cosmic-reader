@@ -2,6 +2,7 @@ import { Quit, WindowFullscreen, WindowIsFullscreen, WindowUnfullscreen } from "
 import { ComicPage } from "./components/ComicPage";
 import { ComicProvider } from "./components/ComicProvider";
 import { Home } from "./components/Home";
+import { KbdShortcutModal } from "./components/KbdShortcutModal";
 import { RouterProvider, useRouter } from "./components/RouterProvider";
 import { ShortcutProvider, useShortcut } from "./components/ShortcutProvider";
 
@@ -11,6 +12,7 @@ export function App() {
       <ComicProvider>
         <ShortcutProvider>
           <RouterController />
+          <KbdShortcutModal />
         </ShortcutProvider>
       </ComicProvider>
     </RouterProvider>
@@ -18,7 +20,7 @@ export function App() {
 }
 
 function RouterController() {
-  const { activeRoute } = useRouter();
+  const { activeRoute, openModal, closeModal, activeModal } = useRouter();
   let Route = Home;
 
   const comicPrefix = "comic-id: ";
@@ -29,6 +31,15 @@ function RouterController() {
 
   useShortcut("Control+Shift+f", toggleFullscreen);
   useShortcut("Control+q", Quit);
+
+  useShortcut("Alt+k", () => {
+    if (activeModal === "kbd-shortcuts") {
+      closeModal();
+      return;
+    }
+
+    openModal("kbd-shortcuts");
+  });
 
   return <Route />;
 }

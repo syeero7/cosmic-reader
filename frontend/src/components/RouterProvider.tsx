@@ -2,7 +2,7 @@ import { createContext } from "preact";
 import type { PropsWithChildren } from "preact/compat";
 import { useContext, useState } from "preact/hooks";
 
-type Modals = "kb-shortcuts" | "app-error";
+type Modals = "kbd-shortcuts" | "app-error";
 type Routes = "home" | `comic-id: ${ReturnType<typeof crypto.randomUUID>}`;
 type RouterCtx = {
   navigateTo: (to: Routes) => void;

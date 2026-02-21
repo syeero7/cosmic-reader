@@ -46,6 +46,16 @@ input {
   font: inherit;
 }
 
+dialog {
+  margin: auto;
+  border-radius: 0.4em;
+
+  &::backdrop {
+    backdrop-filter: blur(5px);
+    background-color: hsla(from var(--primary) h s l / 0.25);
+  }
+}
+
 .homepage {
   header {
     display: flex;
@@ -54,7 +64,7 @@ input {
     align-items: center;
     max-height: 3.5em;
     padding-block: 1em 0.75em;
-    padding-inline: 0.75em;
+    padding-inline: 1em;
 
     input {
       flex: 1;
@@ -213,8 +223,56 @@ input {
       button > svg {
         width: 2em;
         height: 2em;
-        fill: #000;
+        fill: var(--background);
       }
     }
+  }
+}
+
+.kbd-modal {
+  padding: 2em 0.5em 0.5em;
+  position: relative;
+
+  button {
+    position: absolute;
+    background-color: transparent;
+    transition: opacity 0.2s ease-in-out;
+    padding: 0.2em;
+    right: 0;
+    top: 0;
+
+    svg {
+      width: 1.5em;
+      height: 1.5em;
+      fill: var(--accent);
+    }
+
+    &:hover,
+    &:focus-visible {
+      opacity: 0.75;
+    }
+  }
+
+  table,
+  th,
+  td {
+    border: 1px solid var(--background);
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    padding: 0.75em 1em;
+  }
+
+  td {
+    font-size: 0.8em;
+  }
+
+  kbd {
+    padding: 0.25em 0.6em;
+    background-color: hsla(from var(--primary) h s l / 0.25);
+    border: 1px solid var(--primary);
+    border-radius: 0.2em;
   }
 }

@@ -7,7 +7,13 @@ import {
 } from "preact/compat";
 
 type ArrowKeys = "ArrowDown" | "ArrowUp" | "ArrowLeft" | "ArrowRight";
-type KeyCombo = "Control+Shift+f" | "Control+q" | "Alt+l" | ArrowKeys | `Alt+${ArrowKeys}`;
+type KeyCombo =
+  | "Control+Shift+f"
+  | "Control+q"
+  | "Alt+l"
+  | "Alt+k"
+  | ArrowKeys
+  | `Alt+${ArrowKeys}`;
 type Keys = "Control" | "Shift" | "Alt" | (string & {});
 type LowercasedCombo = Lowercase<KeyCombo>;
 
