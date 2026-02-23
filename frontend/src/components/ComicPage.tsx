@@ -1,6 +1,6 @@
 import type { main } from "@wails/go/models";
 import type { TargetedInputEvent } from "preact";
-import { type Dispatch, type StateUpdater, useRef, useState } from "preact/hooks";
+import { type Dispatch, type StateUpdater, useEffect, useRef, useState } from "preact/hooks";
 import { useComics } from "./ComicProvider";
 import { useRouter } from "./RouterProvider";
 import { useShortcut } from "./ShortcutProvider";
@@ -79,6 +79,8 @@ function ComicMenu({ pageCount, pages, setPages, setOrientation, navigateToHome 
   useShortcut("Alt+ArrowDown", () => setOrientation(0)); // normal
   useShortcut("Alt+ArrowLeft", () => setOrientation(-90)); // counter clockwise
 
+  useMouseWheel(toPreviousPage, toNextPage);
+
   const toAnyPage = (e: TargetedInputEvent<HTMLInputElement>) => {
     clearTimeout(timerRef.current);
     const pageN = Number((e.target as HTMLInputElement).value);
@@ -103,7 +105,7 @@ function ComicMenu({ pageCount, pages, setPages, setOrientation, navigateToHome 
     <menu>
       <div className="page-menu" style={{ "--page-menu-visibility": lockState === "lock" ? 1 : 0 }}>
         <div className="page-input">
-          <input type="range" min={1} defaultValue={1} max={pageCount} onChange={toAnyPage} />
+          <input type="range" min={1} value={pages.current} max={pageCount} onChange={toAnyPage} />
           <span>{pages.current}</span>
         </div>
 
@@ -148,6 +150,27 @@ function ComicMenu({ pageCount, pages, setPages, setOrientation, navigateToHome 
       </div>
     </menu>
   );
+}
+
+function useMouseWheel(onWheelUp: () => void, onWheelDown: () => void) {
+  const timerRef = useRef<NodeJS.Timeout | undefined>();
+
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        if (e.deltaY < 0) {
+          onWheelUp();
+          return;
+        }
+
+        onWheelDown();
+      }, 350);
+    };
+
+    window.addEventListener("wheel", handleWheel);
+    return () => window.removeEventListener("wheel", handleWheel);
+  }, [onWheelUp, onWheelDown]);
 }
 
 function getOrientation(orientation: ImageOrientation, direction: "L" | "R"): ImageOrientation {
