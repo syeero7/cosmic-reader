@@ -23,7 +23,7 @@ export function ComicPage({ comicId }: { comicId: string }) {
     return;
   }
 
-  const landscape = [-90, 90].some((v) => v === orientation);
+  const landscape = [-90, 90].includes(orientation);
 
   const styles = {
     "--comic-page-orientation": `rotate(${orientation}deg)`,
@@ -57,16 +57,19 @@ type MenuProps = {
 
 function ComicMenu({ pageCount, pages, setPages, setOrientation, navigateToHome }: MenuProps) {
   const [lockState, setLockState] = useState<"lock" | "unlock">("unlock");
+  const [pageInput, setPageInput] = useState(1);
   const timerRef = useRef<NodeJS.Timeout | undefined>();
 
   const toNextPage = () => {
     if (pages.current === pageCount) return;
     setPages((p) => ({ prev: p.current, current: p.next, next: p.next + 1 }));
+    setPageInput(pages.next);
   };
 
   const toPreviousPage = () => {
     if (pages.current === 1) return;
     setPages((p) => ({ prev: p.prev - 1, current: p.prev, next: p.current }));
+    setPageInput(pages.prev);
   };
 
   useShortcut("ArrowUp", toPreviousPage);
@@ -82,18 +85,22 @@ function ComicMenu({ pageCount, pages, setPages, setOrientation, navigateToHome 
   useMouseWheel(toPreviousPage, toNextPage);
 
   const toAnyPage = (e: TargetedInputEvent<HTMLInputElement>) => {
-    clearTimeout(timerRef.current);
     const pageN = Number((e.target as HTMLInputElement).value);
     if (Number.isNaN(pageN) || pageN <= 0 || pageN > pageCount) return;
+    setPageInput(pageN);
+  };
 
+  useEffect(() => {
     timerRef.current = setTimeout(() => {
       setPages({
-        prev: pageN - 1,
-        current: pageN,
-        next: pageN === pageCount ? 0 : pageN + 1,
+        prev: pageInput - 1,
+        current: pageInput,
+        next: pageInput === pageCount ? 0 : pageInput + 1,
       });
-    }, 300);
-  };
+    }, 200);
+
+    return () => clearTimeout(timerRef.current);
+  }, [setPages, pageInput]);
 
   const toggleMenuVisibility = () => setLockState((l) => (l === "lock" ? "unlock" : "lock"));
   useShortcut("Alt+l", toggleMenuVisibility);
@@ -105,8 +112,8 @@ function ComicMenu({ pageCount, pages, setPages, setOrientation, navigateToHome 
     <menu>
       <div className="page-menu" style={{ "--page-menu-visibility": lockState === "lock" ? 1 : 0 }}>
         <div className="page-input">
-          <input type="range" min={1} value={pages.current} max={pageCount} onChange={toAnyPage} />
-          <span>{pages.current}</span>
+          <input type="range" min={1} value={pageInput} max={pageCount} onChange={toAnyPage} />
+          <span>{pageInput}</span>
         </div>
 
         <div className="menu-btns">
@@ -153,19 +160,21 @@ function ComicMenu({ pageCount, pages, setPages, setOrientation, navigateToHome 
 }
 
 function useMouseWheel(onWheelUp: () => void, onWheelDown: () => void) {
-  const timerRef = useRef<NodeJS.Timeout | undefined>();
+  const throttleRef = useRef(0);
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => {
-        if (e.deltaY < 0) {
-          onWheelUp();
-          return;
-        }
+      const now = Date.now();
+      const delay = 300;
 
+      if (now - throttleRef.current < delay) return;
+      if (e.deltaY < 0) {
+        onWheelUp();
+      } else {
         onWheelDown();
-      }, 350);
+      }
+
+      throttleRef.current = now;
     };
 
     window.addEventListener("wheel", handleWheel);
