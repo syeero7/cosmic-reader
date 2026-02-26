@@ -2,7 +2,10 @@ package main
 
 import (
 	"errors"
+	"io"
+	"mime"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -44,5 +47,20 @@ func comicPageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	streamComicPage(w, comid, pageN)
+	file, err := getComicPage(comid, pageN)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	img, err := file.Open()
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	defer img.Close()
+	w.Header().Set("Cache-Control", "max-age=172800")
+	w.Header().Set("Content-Type", mime.TypeByExtension(filepath.Ext(file.Name)))
+	io.Copy(w, img)
 }

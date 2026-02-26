@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"mime"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -84,11 +83,12 @@ func extractComicInfo(id, fpath string) (*Archive, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	defer file.Close()
+
 	count := 0
 	cinfo := new(Archive)
 	thumbnailDone, pageCountDone, titleDone := false, false, false
+
 	err = extr.Extract(ctx, file, func(ctx context.Context, f archives.FileInfo) error {
 		if strings.ToLower(f.Name()) == "comicinfo.xml" {
 			pageCount, title, err := parseComicInfoXML(f)
@@ -141,47 +141,28 @@ func extractComicInfo(id, fpath string) (*Archive, error) {
 	return cinfo, err
 }
 
-func streamComicPage(w http.ResponseWriter, id string, page int) error {
+func getComicPage(id string, page int) (*zip.File, error) {
 	fpath, err := storage.findArchive(id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	file, extr, ctx, err := getExtractor(fpath)
+	cbz, err := zip.OpenReader(fpath)
 	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	count := 0
-	err = extr.Extract(ctx, file, func(ctx context.Context, f archives.FileInfo) error {
-		if getFileType(f.Name()) == "image" {
-			count++
-			if count == page {
-				img, err := f.Open()
-				if err != nil {
-					return err
-				}
-
-				defer img.Close()
-				w.Header().Set("Cache-Control", "max-age=604800")
-				w.Header().Set("Content-Type", mime.TypeByExtension(filepath.Ext(f.Name())))
-				if _, err := io.Copy(w, img); err != nil {
-					return err
-				}
-
-				return ExtractionDoneError
-			}
-		}
-
-		return nil
-	})
-
-	if err != nil && !errors.Is(err, ExtractionDoneError) {
-		return err
+		return nil, err
 	}
 
-	return nil
+	idx := page - 1
+	if idx < 0 || idx >= len(cbz.File) {
+		return nil, errors.New("invalid page index")
+	}
+
+	file := cbz.File[idx]
+	if getFileType(file.Name) != "image" {
+		return nil, errors.New("file is not an image")
+	}
+
+	return file, nil
 }
 
 func getExtractor(fpath string) (*os.File, archives.Extractor, context.Context, error) {
