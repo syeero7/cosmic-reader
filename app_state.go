@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -87,30 +86,36 @@ func (s *StateManager) removeArchive(id string) error {
 	return s.save(state)
 }
 
-func (s *StateManager) addArchive(id, fpath string, archive Archive, replace bool) error {
+func (s *StateManager) addArchive(id, fpath string, replace bool) (*Archive, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	state, err := s.getState()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_, ok := state.Archives[id]
 	if !replace && ok {
-		return fmt.Errorf("archive: %s exists", id)
+		return nil, fmt.Errorf("archive: %s exists", id)
 	}
 
 	if replace && !ok {
-		return fmt.Errorf("archive: %s not found", id)
+		return nil, fmt.Errorf("archive: %s not found", id)
 	}
 
-	if err := s.copyArchive(id, fpath); err != nil {
-		return err
+	arch, err := extractComicInfo(id, fpath)
+	if err != nil {
+		return nil, err
 	}
 
-	state.Archives[id] = archive
-	return s.save(state)
+	if err := convertToCBZ(id, fpath, arch.PageCount); err != nil {
+		return nil, err
+	}
+
+	state.Archives[id] = *arch
+	arch.Thumbnail = filepath.Base(arch.Thumbnail)
+	return arch, s.save(state)
 }
 
 func (s *StateManager) save(state *AppState) error {
@@ -181,31 +186,6 @@ func (s *StateManager) getDefaultState() (*AppState, error) {
 	state.Settings.LibraryDir = home
 	state.Archives = make(map[string]Archive)
 	return state, nil
-}
-
-func (s *StateManager) copyArchive(id, fpath string) error {
-	home, err := getHomeDir()
-	if err != nil {
-		return err
-	}
-
-	src, err := os.Open(fpath)
-	if err != nil {
-		return err
-	}
-
-	defer src.Close()
-	dst, err := os.Create(filepath.Join(home, id+filepath.Ext(fpath)))
-	if err != nil {
-		return err
-	}
-
-	defer dst.Close()
-	if _, err := io.Copy(dst, src); err != nil {
-		return err
-	}
-
-	return dst.Sync()
 }
 
 var ArchiveFoundError = errors.New("archive found")

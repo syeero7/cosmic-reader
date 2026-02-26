@@ -45,16 +45,11 @@ func (a *App) DeleteComic(id string) {
 }
 
 func (a *App) AddComicBook(id, fpath string) *Archive {
-	arch, err := extractComicInfo(fpath, id)
+	arch, err := storage.addArchive(id, fpath, false)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := storage.addArchive(id, fpath, *arch, false); err != nil {
-		log.Fatal(err)
-	}
-
-	arch.Thumbnail = filepath.Base(arch.Thumbnail)
 	return arch
 }
 

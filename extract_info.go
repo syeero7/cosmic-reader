@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"mime"
 	"net/http"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/klauspost/compress/zip"
 	"github.com/mholt/archives"
 )
 
@@ -28,19 +28,64 @@ type ComicMetadata struct {
 var PageCountParseError = errors.New("page count parsing failed")
 var ExtractionDoneError = errors.New("info extraction is done")
 
-func extractComicInfo(fpath, id string) (*Archive, error) {
-	file, err := os.Open(fpath)
+func convertToCBZ(id, fpath string, pageCount int) error {
+	file, extr, ctx, err := getExtractor(fpath)
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+	home, err := getHomeDir()
+	if err != nil {
+		return err
+	}
+
+	dst, err := os.Create(filepath.Join(home, id+".cbz"))
+	if err != nil {
+		return err
+	}
+
+	defer dst.Close()
+	cbzw := zip.NewWriter(dst)
+	defer cbzw.Close()
+
+	count := 1
+	padding := countDigits(pageCount) + 1
+	err = extr.Extract(ctx, file, func(ctx context.Context, f archives.FileInfo) error {
+		if getFileType(f.Name()) != "image" {
+			return nil
+		}
+
+		filename := fmt.Sprintf("%0*d%s", padding, count, filepath.Ext(f.Name()))
+		pagef, err := cbzw.Create(filename)
+		if err != nil {
+			return err
+		}
+
+		tmpf, err := f.Open()
+		if err != nil {
+			return err
+		}
+
+		defer tmpf.Close()
+		if _, err := io.Copy(pagef, tmpf); err != nil {
+			return err
+		}
+
+		count++
+		return nil
+	})
+
+	return err
+}
+
+func extractComicInfo(id, fpath string) (*Archive, error) {
+	file, extr, ctx, err := getExtractor(fpath)
 	if err != nil {
 		return nil, err
 	}
 
 	defer file.Close()
-	ctx := context.Background()
-	extr, err := getExtractor(file, ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	count := 0
 	cinfo := new(Archive)
 	thumbnailDone, pageCountDone, titleDone := false, false, false
@@ -59,21 +104,23 @@ func extractComicInfo(fpath, id string) (*Archive, error) {
 			}
 		}
 
-		if getFileType(f.Name()) == "image" {
-			count++
-			if count == 1 {
-				tmbpath, err := cacheThumbnail(&f, id)
-				if err != nil {
-					return err
-				}
+		if getFileType(f.Name()) != "image" {
+			return nil
+		}
 
-				cinfo.Thumbnail = tmbpath
-				thumbnailDone = true
+		count++
+		if count == 1 {
+			tmbpath, err := cacheThumbnail(&f, id)
+			if err != nil {
+				return err
 			}
 
-			if pageCountDone && thumbnailDone && titleDone {
-				return ExtractionDoneError
-			}
+			cinfo.Thumbnail = tmbpath
+			thumbnailDone = true
+		}
+
+		if pageCountDone && thumbnailDone && titleDone {
+			return ExtractionDoneError
 		}
 
 		return nil
@@ -94,42 +141,17 @@ func extractComicInfo(fpath, id string) (*Archive, error) {
 	return cinfo, err
 }
 
-// TODO: optimize page retrieving. optimize comic archive on adding for ez page retrieval
-
-// archive length - 1 (comicInfo.xml) === total page count
-// width := 6
-// value := 12
-// padded := fmt.Sprintf("%0*d", width, value)
-// func countDigits(i int) int {
-// 	if i == 0 {
-// 		return 1
-// 	}
-//
-// 	count := 0
-// 	for i >= 0 {
-// 		i /= 10
-// 		count++
-// 	}
-// 	return count
-// }
-
 func streamComicPage(w http.ResponseWriter, id string, page int) error {
 	fpath, err := storage.findArchive(id)
 	if err != nil {
 		return err
 	}
 
-	file, err := os.Open(fpath)
+	file, extr, ctx, err := getExtractor(fpath)
 	if err != nil {
 		return err
 	}
-
 	defer file.Close()
-	ctx := context.Background()
-	extr, err := getExtractor(file, ctx)
-	if err != nil {
-		return err
-	}
 
 	count := 0
 	err = extr.Extract(ctx, file, func(ctx context.Context, f archives.FileInfo) error {
@@ -162,18 +184,24 @@ func streamComicPage(w http.ResponseWriter, id string, page int) error {
 	return nil
 }
 
-func getExtractor(file *os.File, ctx context.Context) (archives.Extractor, error) {
+func getExtractor(fpath string) (*os.File, archives.Extractor, context.Context, error) {
+	file, err := os.Open(fpath)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	ctx := context.Background()
 	format, _, err := archives.Identify(ctx, file.Name(), file)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
 	extr, ok := format.(archives.Extractor)
 	if !ok || !isSupported(file.Name()) {
-		return nil, fmt.Errorf("filetype '%s' is not supported", filepath.Ext(file.Name()))
+		return nil, nil, nil, fmt.Errorf("filetype '%s' is not supported", filepath.Ext(file.Name()))
 	}
 
-	return extr, nil
+	return file, extr, ctx, nil
 }
 
 func parseComicInfoXML(file archives.FileInfo) (int, string, error) {
@@ -197,8 +225,6 @@ func parseComicInfoXML(file archives.FileInfo) (int, string, error) {
 		metadata.Title = metadata.Series
 	}
 
-	// TODO: remove metadata logging
-	slog.Any("comic metadata", metadata)
 	if metadata.PageCount == 0 {
 		parts := strings.Split(strings.ToLower(metadata.Summary), "pages: ")
 		if len(parts) != 2 {
@@ -234,4 +260,14 @@ func isSupported(fpath string) bool {
 		}
 	}
 	return false
+}
+
+func countDigits(n int) int {
+	count := 0
+	for n != 0 {
+		n /= 10
+		count++
+	}
+
+	return count
 }
