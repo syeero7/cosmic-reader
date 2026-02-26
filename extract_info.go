@@ -55,24 +55,9 @@ func convertToCBZ(id, fpath string, pageCount int) error {
 			return nil
 		}
 
-		filename := fmt.Sprintf("%0*d%s", padding, count, filepath.Ext(f.Name()))
-		pagef, err := cbzw.Create(filename)
-		if err != nil {
-			return err
-		}
-
-		tmpf, err := f.Open()
-		if err != nil {
-			return err
-		}
-
-		defer tmpf.Close()
-		if _, err := io.Copy(pagef, tmpf); err != nil {
-			return err
-		}
-
+		filename := fmt.Sprintf("%0*d%s", padding, count, strings.ToLower(filepath.Ext(f.Name())))
 		count++
-		return nil
+		return addPageToCBZ(cbzw, f, filename)
 	})
 
 	return err
@@ -183,6 +168,39 @@ func getExtractor(fpath string) (*os.File, archives.Extractor, context.Context, 
 	}
 
 	return file, extr, ctx, nil
+}
+
+func addPageToCBZ(cbz *zip.Writer, file archives.FileInfo, filename string) error {
+	tmpf, err := file.Open()
+	if err != nil {
+		return err
+	}
+
+	defer tmpf.Close()
+	stat, err := tmpf.Stat()
+	if err != nil {
+		return err
+	}
+
+	header, err := zip.FileInfoHeader(stat)
+	if err != nil {
+		return err
+	}
+
+	if ext := filepath.Ext(filename); ext == ".bmp" || ext == ".raw" {
+		header.Method = zip.Deflate
+	} else {
+		header.Method = zip.Store
+	}
+
+	header.Name = filename
+	imgw, err := cbz.CreateHeader(header)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(imgw, tmpf)
+	return err
 }
 
 func parseComicInfoXML(file archives.FileInfo) (int, string, error) {
