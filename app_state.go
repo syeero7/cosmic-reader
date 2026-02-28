@@ -113,8 +113,8 @@ func (s *StateManager) addArchive(id, fpath string, replace bool) (*Archive, err
 		return nil, err
 	}
 
-	state.Archives[id] = *arch
 	arch.Thumbnail = filepath.Base(arch.Thumbnail)
+	state.Archives[id] = *arch
 	return arch, s.save(state)
 }
 

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"path/filepath"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -59,11 +58,5 @@ func (a *App) GetComicInfo() map[string]Archive {
 		log.Fatal(err)
 	}
 
-	archives := make(map[string]Archive, len(state.Archives))
-	for k, v := range state.Archives {
-		v.Thumbnail = filepath.Base(v.Thumbnail)
-		archives[k] = v
-	}
-
-	return archives
+	return state.Archives
 }
