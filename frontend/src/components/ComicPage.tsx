@@ -7,14 +7,14 @@ import { useShortcut } from "./ShortcutProvider";
 
 type ImageOrientation = 0 | 90 | -90 | 180;
 
-const getInitialPageState = (comic?: main.ArchiveInfo) => {
+const getInitialPageState = (comic?: main.Archive) => {
   return { prev: 0, current: comic ? 1 : 0, next: comic ? Math.min(2, comic.pageCount) : 0 };
 };
 
 export function ComicPage({ comicId }: { comicId: string }) {
   const router = useRouter();
   const { comics } = useComics();
-  const selectedComic = comics.find((c) => c.id === comicId);
+  const selectedComic = comics[comicId];
   const [pages, setPages] = useState(() => getInitialPageState(selectedComic));
   const [orientation, setOrientation] = useState<ImageOrientation>(0);
 
@@ -29,7 +29,7 @@ export function ComicPage({ comicId }: { comicId: string }) {
     "--comic-page-orientation": `rotate(${orientation}deg)`,
     "--comic-page-width": `100${landscape ? "vh" : "vw"}`,
     "--comic-page-height": `100${landscape ? "vw" : "vh"}`,
-    "--comic-page-url": `url(/comics/${selectedComic.id}/pages/${pages.current})`,
+    "--comic-page-url": `url(/comics/${comicId}/pages/${pages.current})`,
   };
 
   return (

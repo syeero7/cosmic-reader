@@ -6,6 +6,6 @@ export function AddComicBook(arg1:string,arg2:string):Promise<main.Archive>;
 
 export function DeleteComic(arg1:string):Promise<void>;
 
-export function GetComicInfo():Promise<Array<main.ArchiveInfo>>;
+export function GetComicInfo():Promise<Record<string, main.Archive>>;
 
 export function SelectFile():Promise<string>;

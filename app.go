@@ -53,21 +53,16 @@ func (a *App) AddComicBook(id, fpath string) *Archive {
 	return arch
 }
 
-type ArchiveInfo struct {
-	Archive
-	ID string `json:"id"`
-}
-
-func (a *App) GetComicInfo() []ArchiveInfo {
+func (a *App) GetComicInfo() map[string]Archive {
 	state, err := storage.getState()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	archives := make([]ArchiveInfo, 0, len(state.Archives))
+	archives := make(map[string]Archive, len(state.Archives))
 	for k, v := range state.Archives {
 		v.Thumbnail = filepath.Base(v.Thumbnail)
-		archives = append(archives, ArchiveInfo{Archive: v, ID: k})
+		archives[k] = v
 	}
 
 	return archives

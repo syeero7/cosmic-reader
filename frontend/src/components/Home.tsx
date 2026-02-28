@@ -2,6 +2,7 @@ import { AddComicBook, DeleteComic, SelectFile } from "@wails/go/main/App";
 import type { main } from "@wails/go/models";
 import type { TargetedInputEvent } from "preact";
 import { useRef, useState } from "preact/compat";
+import fallbackImg from "@/assets/cosmic_fallback.webp";
 import { useComics } from "./ComicProvider";
 import { useRouter } from "./RouterProvider";
 
@@ -24,8 +25,9 @@ export function Home() {
     if (!path) return;
 
     const id = crypto.randomUUID();
-    const cbook = await AddComicBook(id, path);
-    dispatch({ type: "add_comics", payload: [{ id, ...cbook }] });
+    const tmp: main.Archive = { title: "Loading...", pageCount: 0, thumbnail: "" };
+    dispatch({ type: "add_comics", payload: { [id]: tmp } });
+    AddComicBook(id, path).then((v) => dispatch({ type: "add_comics", payload: { [id]: v } }));
   };
 
   const deleteComic = (id: string) => {
@@ -42,8 +44,10 @@ export function Home() {
   };
 
   const archives = !filterQuery
-    ? comics
-    : comics.filter((c) => c.title.toLowerCase().includes(filterQuery.toLowerCase()));
+    ? Object.entries(comics)
+    : Object.entries(comics).filter(([_k, v]) =>
+        v.title.toLowerCase().includes(filterQuery.toLowerCase()),
+      );
 
   return (
     <main className="homepage">
@@ -64,12 +68,12 @@ export function Home() {
       </header>
 
       <div className="comic-grid">
-        {archives.map((c) => (
+        {archives.map(([k, v]) => (
           <ComicCard
-            key={c.id}
-            comic={c}
-            deleteFn={deleteComic(c.id)}
-            navigateFn={openComic(c.id)}
+            key={k}
+            comic={{ ...v, id: k }}
+            deleteFn={deleteComic(k)}
+            navigateFn={openComic(k)}
           />
         ))}
       </div>
@@ -78,26 +82,33 @@ export function Home() {
 }
 
 type ComicCardProps = {
-  comic: main.ArchiveInfo;
+  comic: main.Archive & { id: string };
   deleteFn: () => void;
   navigateFn: () => void;
 };
 
 function ComicCard({ comic, deleteFn, navigateFn }: ComicCardProps) {
+  const temporary = comic.title.startsWith("Loading") && comic.pageCount === 0;
+
   return (
-    <article className="comic-card">
-      <button onClick={deleteFn} title={`delete ${comic.title}`}>
+    <article className={`comic-card${temporary ? " loading" : ""}`}>
+      <button onClick={deleteFn} title={`delete ${comic.title}`} disabled={temporary}>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
           <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm80-160h80v-360h-80v360Zm160 0h80v-360h-80v360Z" />
         </svg>
       </button>
 
-      <img src={`/thumbnails/${comic.thumbnail}`} alt={`${comic.title} cover`} />
+      <img
+        src={`/thumbnails/${comic.thumbnail}`}
+        alt={`${comic.title} cover`}
+        onError={(e) => ((e.target as HTMLImageElement).src = fallbackImg)}
+      />
       <a
         title={comic.title}
         href={`/comics/${comic.id}`}
         onClick={(e) => {
           e.preventDefault();
+          if (temporary) return;
           navigateFn();
         }}
       >

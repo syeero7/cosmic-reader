@@ -108,6 +108,18 @@ dialog {
   display: grid;
   max-width: var(--col-width);
   gap: 0.25em;
+  transition: opacity 0.2s ease-in;
+  opacity: 1;
+
+  &.loading {
+    opacity: 0.6;
+    cursor: not-allowed;
+
+    a,
+    button {
+      pointer-events: none;
+    }
+  }
 
   button {
     position: absolute;

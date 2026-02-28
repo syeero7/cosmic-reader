@@ -1,9 +1,10 @@
 import { GetComicInfo } from "@wails/go/main/App";
+import type { main } from "@wails/go/models";
 import { createContext } from "preact";
 import { type PropsWithChildren, useContext, useEffect, useReducer } from "preact/compat";
 
 type ComicCtx = {
-  comics: Readonly<Awaited<ReturnType<typeof GetComicInfo>>>;
+  comics: Record<string, main.Archive>;
   dispatch: (action: ReducerAction) => void;
 };
 
@@ -16,7 +17,7 @@ export function useComics() {
 }
 
 export function ComicProvider({ children }: PropsWithChildren) {
-  const [comics, dispatch] = useReducer(reducer, []);
+  const [comics, dispatch] = useReducer(reducer, {});
   useEffect(() => {
     (async () => {
       const res = await GetComicInfo();
@@ -38,10 +39,15 @@ function reducer(state: ComicCtx["comics"], action: ReducerAction) {
         throw new Error(`invalid payload: ${action.payload}`);
       }
 
-      return [...state, ...action.payload];
+      return { ...state, ...action.payload };
     }
     case "delete_comic": {
-      return state.filter((c) => c.id !== action.payload);
+      if (typeof action.payload !== "string") {
+        throw new Error(`invalid payload: ${action.payload}`);
+      }
+
+      const { [action.payload]: _rm, ...rest } = state;
+      return { ...rest };
     }
   }
 }
