@@ -81,14 +81,14 @@ export function KbdShortcutModal() {
 
               <tr>
                 <td>
-                  <kbd>Alt</kbd> + <kbd>Arrow Right</kbd>
+                  <kbd>Alt</kbd> + <kbd>Arrow Left</kbd>
                 </td>
                 <td>Rotate Clockwise 90&deg;</td>
               </tr>
 
               <tr>
                 <td>
-                  <kbd>Alt</kbd> + <kbd>Arrow Left</kbd>
+                  <kbd>Alt</kbd> + <kbd>Arrow Right</kbd>
                 </td>
                 <td>Rotate Counter Clockwise -90&deg;</td>
               </tr>

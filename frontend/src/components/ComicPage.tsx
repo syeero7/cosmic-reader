@@ -78,9 +78,9 @@ function ComicMenu({ pageCount, pages, setPages, setOrientation, navigateToHome 
   useShortcut("ArrowLeft", toPreviousPage);
 
   useShortcut("Alt+ArrowUp", () => setOrientation(180)); // upside down
-  useShortcut("Alt+ArrowRight", () => setOrientation(90)); // clockwise
+  useShortcut("Alt+ArrowRight", () => setOrientation(-90)); // counter clockwise
   useShortcut("Alt+ArrowDown", () => setOrientation(0)); // normal
-  useShortcut("Alt+ArrowLeft", () => setOrientation(-90)); // counter clockwise
+  useShortcut("Alt+ArrowLeft", () => setOrientation(90)); // clockwise
 
   useMouseWheel(toPreviousPage, toNextPage);
 
