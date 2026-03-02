@@ -76,6 +76,10 @@ func (a *App) OpenCBZFile() int {
 		log.Fatal(err)
 	}
 
+	if fpath == "" {
+		return 0
+	}
+
 	pages, err := extractTempComic(fpath)
 	if err != nil {
 		log.Fatal(err)

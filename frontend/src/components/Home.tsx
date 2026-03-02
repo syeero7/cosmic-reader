@@ -45,6 +45,7 @@ export function Home() {
 
   const openCBZ = async () => {
     const pageCount = await OpenCBZFile();
+    if (pageCount === 0) return;
     router.navigateTo(`temp-comic: ${crypto.randomUUID()},${pageCount}`);
   };
 
@@ -112,7 +113,9 @@ function ComicCard({ comic, deleteFn, navigateFn }: ComicCardProps) {
       <img
         src={`/thumbnails/${comic.thumbnail}`}
         alt={`${comic.title} cover`}
-        onError={(e) => ((e.target as HTMLImageElement).src = fallbackImg)}
+        onError={(e) => {
+          (e.target as HTMLImageElement).src = fallbackImg;
+        }}
       />
       <a
         title={comic.title}
