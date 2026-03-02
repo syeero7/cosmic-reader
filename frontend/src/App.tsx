@@ -29,6 +29,12 @@ function RouterController() {
     Route = () => <ComicPage comicId={comicId} />;
   }
 
+  const tempComicPrefix = "temp-comic: ";
+  if (activeRoute.startsWith(tempComicPrefix)) {
+    const [comicId, pageCount] = activeRoute.slice(tempComicPrefix.length).split(",");
+    Route = () => <ComicPage comicId={comicId} tempComic={{ pageCount: Number(pageCount) }} />;
+  }
+
   useShortcut("Control+Shift+f", toggleFullscreen);
   useShortcut("Control+q", Quit);
 

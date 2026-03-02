@@ -150,6 +150,52 @@ func getComicPage(id string, page int) (*zip.File, error) {
 	return file, nil
 }
 
+var tempComic = new(struct {
+	path  string
+	pages map[int]int
+})
+
+func extractTempComic(fpath string) (int, error) {
+	cbz, err := zip.OpenReader(fpath)
+	if err != nil {
+		return 0, err
+	}
+
+	tempComic.path = fpath
+	tempComic.pages = make(map[int]int, len(cbz.File))
+
+	pageCount := 0
+	for i, file := range cbz.File {
+		if getFileType(file.Name) != "image" {
+			tempComic.pages[i+1] = -1
+			continue
+		}
+
+		tempComic.pages[i+1] = i
+		pageCount++
+	}
+
+	return pageCount, nil
+}
+
+func getTempComicPage(page int) (*zip.File, error) {
+	if tempComic == nil {
+		return nil, errors.New("temporary comic not found")
+	}
+
+	cbz, err := zip.OpenReader(tempComic.path)
+	if err != nil {
+		return nil, err
+	}
+
+	idx, ok := tempComic.pages[page]
+	if i := page - 1; i < 0 || i >= len(cbz.File) || !ok || idx == -1 {
+		return nil, errors.New("invalid page index")
+	}
+
+	return cbz.File[idx], nil
+}
+
 func getExtractor(fpath string) (*os.File, archives.Extractor, context.Context, error) {
 	file, err := os.Open(fpath)
 	if err != nil {

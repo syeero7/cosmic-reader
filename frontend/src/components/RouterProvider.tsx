@@ -3,7 +3,10 @@ import type { PropsWithChildren } from "preact/compat";
 import { useContext, useState } from "preact/hooks";
 
 type Modals = "kbd-shortcuts" | "app-error";
-type Routes = "home" | `comic-id: ${ReturnType<typeof crypto.randomUUID>}`;
+type Routes =
+  | "home"
+  | `comic-id: ${ReturnType<typeof crypto.randomUUID>}`
+  | `temp-comic: ${ReturnType<typeof crypto.randomUUID>},${string}`;
 type RouterCtx = {
   navigateTo: (to: Routes) => void;
   openModal: (modal: Modals) => void;

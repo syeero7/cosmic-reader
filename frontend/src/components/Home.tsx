@@ -1,4 +1,4 @@
-import { AddComicBook, DeleteComic, SelectFile } from "@wails/go/main/App";
+import { AddComicBook, DeleteComic, OpenCBZFile, SelectFile } from "@wails/go/main/App";
 import type { main } from "@wails/go/models";
 import type { TargetedInputEvent } from "preact";
 import { useRef, useState } from "preact/compat";
@@ -43,6 +43,11 @@ export function Home() {
     };
   };
 
+  const openCBZ = async () => {
+    const pageCount = await OpenCBZFile();
+    router.navigateTo(`temp-comic: ${crypto.randomUUID()},${pageCount}`);
+  };
+
   const archives = !filterQuery
     ? Object.entries(comics)
     : Object.entries(comics).filter(([_k, v]) =>
@@ -60,7 +65,13 @@ export function Home() {
           </svg>
         </button>
 
-        <button onClick={() => router.openModal("kbd-shortcuts")}>
+        <button onClick={openCBZ} title="open comic book (.cbz)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+            <path d="M240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v240h-80v-200H520v-200H240v640h360v80H240Zm638 15L760-183v89h-80v-226h226v80h-90l118 118-56 57Zm-638-95v-640 640Z" />
+          </svg>
+        </button>
+
+        <button onClick={() => router.openModal("kbd-shortcuts")} title="view keybord shortcuts">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
             <path d="M160-200q-33 0-56.5-23.5T80-280v-400q0-33 23.5-56.5T160-760h640q33 0 56.5 23.5T880-680v400q0 33-23.5 56.5T800-200H160Zm0-80h640v-400H160v400Zm160-40h320v-80H320v80ZM200-440h80v-80h-80v80Zm120 0h80v-80h-80v80Zm120 0h80v-80h-80v80Zm120 0h80v-80h-80v80Zm120 0h80v-80h-80v80ZM200-560h80v-80h-80v80Zm120 0h80v-80h-80v80Zm120 0h80v-80h-80v80Zm120 0h80v-80h-80v80Zm120 0h80v-80h-80v80ZM160-280v-400 400Z" />
           </svg>

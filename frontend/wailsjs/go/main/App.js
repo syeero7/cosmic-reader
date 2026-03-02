@@ -14,6 +14,10 @@ export function GetComicInfo() {
   return window['go']['main']['App']['GetComicInfo']();
 }
 
+export function OpenCBZFile() {
+  return window['go']['main']['App']['OpenCBZFile']();
+}
+
 export function SelectFile() {
   return window['go']['main']['App']['SelectFile']();
 }

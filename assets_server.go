@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/klauspost/compress/zip"
 )
 
 func newAssetsServer(next http.Handler) http.Handler {
@@ -41,13 +43,20 @@ func thumbnailHandler(w http.ResponseWriter, r *http.Request) {
 
 func comicPageHandler(w http.ResponseWriter, r *http.Request) {
 	comid := r.PathValue("comicId")
+	tempComic := r.URL.Query().Get("temp") == "true"
 	pageN, err := strconv.Atoi(r.PathValue("page"))
 	if err != nil || strings.TrimSpace(comid) == "" || pageN <= 0 {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	file, err := getComicPage(comid, pageN)
+	var file *zip.File
+	if tempComic {
+		file, err = getTempComicPage(pageN)
+	} else {
+		file, err = getComicPage(comid, pageN)
+	}
+
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return

@@ -60,3 +60,26 @@ func (a *App) GetComicInfo() map[string]Archive {
 
 	return state.Archives
 }
+
+func (a *App) OpenCBZFile() int {
+	opt := runtime.OpenDialogOptions{
+		Title:                "Open Comic Book Zip Archive",
+		CanCreateDirectories: false,
+		Filters: []runtime.FileFilter{{
+			DisplayName: "Comic Book Zip Archive *.cbz",
+			Pattern:     "*.cbz",
+		}},
+	}
+
+	fpath, err := runtime.OpenFileDialog(a.ctx, opt)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	pages, err := extractTempComic(fpath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return pages
+}
