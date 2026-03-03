@@ -9,7 +9,6 @@ import (
 	"mime"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/klauspost/compress/zip"
@@ -72,21 +71,17 @@ func extractComicInfo(id, fpath string) (*Archive, error) {
 
 	count := 0
 	cinfo := new(Archive)
-	thumbnailDone, pageCountDone, titleDone := false, false, false
+	thumbnailDone, titleDone := false, false
 
 	err = extr.Extract(ctx, file, func(ctx context.Context, f archives.FileInfo) error {
 		if strings.ToLower(f.Name()) == "comicinfo.xml" {
-			pageCount, title, err := parseComicInfoXML(f)
+			title, err := parseTitleFromXML(&f)
 			if err != nil && !errors.Is(err, PageCountParseError) {
 				return err
 			}
 
 			cinfo.Title = title
 			titleDone = true
-			if pageCount > 0 {
-				cinfo.PageCount = pageCount
-				pageCountDone = true
-			}
 		}
 
 		if getFileType(f.Name()) != "image" {
@@ -104,16 +99,12 @@ func extractComicInfo(id, fpath string) (*Archive, error) {
 			thumbnailDone = true
 		}
 
-		if pageCountDone && thumbnailDone && titleDone {
+		if thumbnailDone && titleDone {
 			return ExtractionDoneError
 		}
 
 		return nil
 	})
-
-	if !pageCountDone {
-		cinfo.PageCount = count
-	}
 
 	if cinfo.Title == "" {
 		cinfo.Title = strings.TrimSuffix(filepath.Base(file.Name()), filepath.Ext(file.Name()))
@@ -249,47 +240,28 @@ func addPageToCBZ(cbz *zip.Writer, file archives.FileInfo, filename string) erro
 	return err
 }
 
-func parseComicInfoXML(file archives.FileInfo) (int, string, error) {
+func parseTitleFromXML(file *archives.FileInfo) (string, error) {
 	f, err := file.Open()
 	if err != nil {
-		return 0, "", err
+		return "", err
 	}
 
 	defer f.Close()
 	byt, err := io.ReadAll(f)
 	if err != nil {
-		return 0, "", err
+		return "", err
 	}
 
 	metadata := new(ComicMetadata)
 	if err := xml.Unmarshal(byt, metadata); err != nil {
-		return 0, "", err
+		return "", err
 	}
 
 	if strings.ToLower(metadata.Title) == "chapter" && len(metadata.Series) > 0 {
 		metadata.Title = metadata.Series
 	}
 
-	if metadata.PageCount == 0 {
-		parts := strings.Split(strings.ToLower(metadata.Summary), "pages: ")
-		if len(parts) != 2 {
-			return 0, metadata.Title, PageCountParseError
-		}
-
-		parts2 := strings.Fields(parts[1])
-		if len(parts) == 0 {
-			return 0, metadata.Title, PageCountParseError
-		}
-
-		n, err := strconv.Atoi(parts2[0])
-		if err != nil {
-			return 0, metadata.Title, PageCountParseError
-		}
-
-		metadata.PageCount = n
-	}
-
-	return metadata.PageCount, metadata.Title, nil
+	return metadata.Title, nil
 }
 
 func getFileType(name string) string {
