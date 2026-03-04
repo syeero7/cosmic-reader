@@ -89,7 +89,7 @@ func deleteCachedThumbnails(fname *string) error {
 	}
 
 	if fname != nil {
-		return os.Remove(filepath.Join(cache, filepath.Base(*fname)))
+		return os.Remove(filepath.Join(cache, *fname))
 	}
 
 	files, err := filepath.Glob(filepath.Join(cache, "*"))

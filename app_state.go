@@ -69,7 +69,8 @@ func (s *StateManager) removeArchive(id string) error {
 		return err
 	}
 
-	if _, ok := state.Archives[id]; !ok {
+	arch, ok := state.Archives[id]
+	if !ok {
 		return fmt.Errorf("archive: %s not found", id)
 	}
 
@@ -78,7 +79,11 @@ func (s *StateManager) removeArchive(id string) error {
 		return err
 	}
 
-	if err := os.Remove(fpath); err != nil {
+	if err := os.Remove(fpath); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	if err := deleteCachedThumbnails(&arch.Thumbnail); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
