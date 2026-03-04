@@ -91,8 +91,9 @@ func getComicPage(id string, page int) (*zip.File, error) {
 }
 
 var tempComic = new(struct {
-	path  string
-	pages map[int]int
+	pageCount int
+	path      string
+	pages     map[int]int
 })
 
 func extractTempComic(fpath string) (int, error) {
@@ -104,7 +105,6 @@ func extractTempComic(fpath string) (int, error) {
 	tempComic.path = fpath
 	tempComic.pages = make(map[int]int, len(cbz.File))
 
-	pageCount := 0
 	for i, file := range cbz.File {
 		if getFileType(file.Name) != "image" {
 			tempComic.pages[i+1] = -1
@@ -112,10 +112,14 @@ func extractTempComic(fpath string) (int, error) {
 		}
 
 		tempComic.pages[i+1] = i
-		pageCount++
+		tempComic.pageCount++
 	}
 
-	return pageCount, nil
+	return tempComic.pageCount, nil
+}
+
+func getTempComicInfo() int {
+	return tempComic.pageCount
 }
 
 func getTempComicPage(page int) (*zip.File, error) {

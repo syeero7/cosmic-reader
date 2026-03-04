@@ -1,4 +1,7 @@
+import { GetInitialOpenedCBZ } from "@wails/go/main/App";
 import { Quit, WindowFullscreen, WindowIsFullscreen, WindowUnfullscreen } from "@wails/runtime";
+import { EventsOff, EventsOn } from "@wails/runtime/runtime";
+import { useEffect } from "preact/hooks";
 import { ComicPage } from "./components/ComicPage";
 import { ComicProvider } from "./components/ComicProvider";
 import { Home } from "./components/Home";
@@ -20,7 +23,8 @@ export function App() {
 }
 
 function RouterController() {
-  const { activeRoute, openModal, closeModal, activeModal } = useRouter();
+  const { activeRoute, openModal, closeModal, activeModal, navigateTo } = useRouter();
+  useOpenCBZ(navigateTo);
   let Route = Home;
 
   const comicPrefix = "comic-id: ";
@@ -57,4 +61,19 @@ async function toggleFullscreen() {
   }
 
   WindowFullscreen();
+}
+
+function useOpenCBZ(navigationFn: ReturnType<typeof useRouter>["navigateTo"]) {
+  const eventName = "comic-opened";
+
+  useEffect(() => {
+    const handler = (data: unknown) => {
+      if (typeof data !== "number" || data === 0) return;
+      navigationFn(`temp-comic: ${crypto.randomUUID()},${data}`);
+    };
+
+    GetInitialOpenedCBZ().then(handler);
+    EventsOn(eventName, handler);
+    return () => EventsOff(eventName);
+  }, []);
 }

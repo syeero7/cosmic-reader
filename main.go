@@ -1,31 +1,40 @@
 package main
 
 import (
+	"context"
 	"embed"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
 
 func main() {
-	// Create an instance of the app structure
 	app := NewApp()
-
-	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "cosmic-reader",
-		Width:  1024,
-		Height: 768,
+		Title:      "cosmic-reader",
+		MinWidth:   1024,
+		MinHeight:  768,
+		Fullscreen: true,
 		AssetServer: &assetserver.Options{
 			Assets:     assets,
 			Middleware: newAssetsServer,
 		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.startup,
+		OnStartup: func(ctx context.Context) {
+			app.startup(ctx)
+			app.emitFileOpening(nil)
+		},
+		SingleInstanceLock: &options.SingleInstanceLock{
+			UniqueId: "cosmic_reader.wails",
+			OnSecondInstanceLaunch: func(data options.SecondInstanceData) {
+				app.emitFileOpening(data.Args)
+				runtime.WindowShow(app.ctx)
+			},
+		},
 		Bind: []interface{}{
 			app,
 		},

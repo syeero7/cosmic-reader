@@ -8,6 +8,8 @@ export function DeleteComic(arg1:string):Promise<void>;
 
 export function GetComicInfo():Promise<Record<string, main.Archive>>;
 
+export function GetInitialOpenedCBZ():Promise<number>;
+
 export function OpenCBZFile():Promise<number>;
 
 export function SelectFile():Promise<string>;

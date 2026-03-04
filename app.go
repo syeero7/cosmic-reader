@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"log"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -17,6 +20,25 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+}
+
+func (a *App) emitFileOpening(args []string) {
+	if args == nil {
+		args = os.Args
+	}
+
+	if len(args) < 2 {
+		return
+	}
+
+	if fpath := args[1]; strings.ToLower(filepath.Ext(fpath)) == ".cbz" {
+		pages, err := extractTempComic(fpath)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		runtime.EventsEmit(a.ctx, "comic-opened", pages)
+	}
 }
 
 func (a *App) SelectFile() string {
@@ -86,4 +108,8 @@ func (a *App) OpenCBZFile() int {
 	}
 
 	return pages
+}
+
+func (a *App) GetInitialOpenedCBZ() int {
+	return getTempComicInfo()
 }
