@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "preact/hooks";
 import { useRouter } from "./RouterProvider";
+import { CloseSVG } from "./SVG";
 
 export function KbdShortcutModal() {
   const [modalRef, closeModal] = useModal("kbd-shortcuts");
@@ -8,9 +9,7 @@ export function KbdShortcutModal() {
     <dialog ref={modalRef}>
       <div className="kbd-modal">
         <button onClick={closeModal} title="Close">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
-            <path d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z" />
-          </svg>
+          <CloseSVG />
         </button>
 
         <div>
