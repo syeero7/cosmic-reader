@@ -104,16 +104,11 @@ func (s *StateManager) addArchive(id, fpath string, replace bool) (*Archive, err
 		return nil, fmt.Errorf("archive: %s not found", id)
 	}
 
-	arch, err := extractComicInfo(id, fpath)
+	arch, err := extractComic(id, fpath)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := convertToCBZ(id, fpath, arch.PageCount); err != nil {
-		return nil, err
-	}
-
-	arch.Thumbnail = filepath.Base(arch.Thumbnail)
 	state.Archives[id] = *arch
 	return arch, s.save(state)
 }

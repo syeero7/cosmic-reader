@@ -2,12 +2,12 @@ package main
 
 import (
 	"errors"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
 
 	"github.com/disintegration/imaging"
-	"github.com/mholt/archives"
 )
 
 var CachedThumbnailNotFoundError = errors.New("cached thumbnail not found")
@@ -65,13 +65,7 @@ func getHomeDir() (string, error) {
 	return dir, err
 }
 
-func cacheThumbnail(finfo *archives.FileInfo, fname string) (string, error) {
-	file, err := finfo.Open()
-	if err != nil {
-		return "", err
-	}
-
-	defer file.Close()
+func cacheThumbnail(file io.Reader, fname string) (string, error) {
 	cache, err := getCacheDir(CacheThumbnails)
 	if err != nil {
 		return "", err
