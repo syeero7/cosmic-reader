@@ -16,6 +16,7 @@ type KeyCombo =
   | `Alt+${ArrowKeys}`;
 type Keys = "Control" | "Shift" | "Alt" | (string & {});
 type LowercasedCombo = Lowercase<KeyCombo>;
+export type ShortcutKeys = Keys | ArrowKeys;
 
 type ShortcutCtx = {
   register: (combo: LowercasedCombo, fn: () => void) => void;
