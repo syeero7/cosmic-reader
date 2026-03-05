@@ -1,6 +1,13 @@
 import type { main } from "@wails/go/models";
 import type { TargetedInputEvent } from "preact";
-import { type Dispatch, type StateUpdater, useEffect, useRef, useState } from "preact/hooks";
+import {
+  type Dispatch,
+  type StateUpdater,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "preact/hooks";
 import { useComics } from "./ComicProvider";
 import { useRouter } from "./RouterProvider";
 import { useShortcut } from "./ShortcutProvider";
@@ -74,17 +81,29 @@ function ComicMenu({ pageCount, pages, setPages, setOrientation, navigateToHome 
   const [pageInput, setPageInput] = useState(1);
   const timerRef = useRef<NodeJS.Timeout | undefined>();
 
-  const toNextPage = () => {
+  useEffect(() => {
+    timerRef.current = setTimeout(() => {
+      setPages({
+        prev: pageInput - 1,
+        current: pageInput,
+        next: pageInput === pageCount ? 0 : pageInput + 1,
+      });
+    }, 200);
+
+    return () => clearTimeout(timerRef.current);
+  }, [setPages, pageInput]);
+
+  const toNextPage = useCallback(() => {
     if (pages.current === pageCount) return;
     setPages((p) => ({ prev: p.current, current: p.next, next: p.next + 1 }));
     setPageInput(pages.next);
-  };
+  }, [pages]);
 
-  const toPreviousPage = () => {
+  const toPreviousPage = useCallback(() => {
     if (pages.current === 1) return;
     setPages((p) => ({ prev: p.prev - 1, current: p.prev, next: p.current }));
     setPageInput(pages.prev);
-  };
+  }, [pages]);
 
   useShortcut("ArrowUp", toPreviousPage);
   useShortcut("ArrowRight", toNextPage);
@@ -103,18 +122,6 @@ function ComicMenu({ pageCount, pages, setPages, setOrientation, navigateToHome 
     if (Number.isNaN(pageN) || pageN <= 0 || pageN > pageCount) return;
     setPageInput(pageN);
   };
-
-  useEffect(() => {
-    timerRef.current = setTimeout(() => {
-      setPages({
-        prev: pageInput - 1,
-        current: pageInput,
-        next: pageInput === pageCount ? 0 : pageInput + 1,
-      });
-    }, 200);
-
-    return () => clearTimeout(timerRef.current);
-  }, [setPages, pageInput]);
 
   const toggleMenuVisibility = () => setLockState((l) => (l === "lock" ? "unlock" : "lock"));
   useShortcut("Alt+l", toggleMenuVisibility);
