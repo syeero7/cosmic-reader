@@ -26,8 +26,10 @@ func main() {
 		},
 		OnStartup: func(ctx context.Context) {
 			app.startup(ctx)
+			app.initializeDB()
 			app.emitFileOpening(nil)
 		},
+		OnShutdown: app.shutdown,
 		SingleInstanceLock: &options.SingleInstanceLock{
 			UniqueId: "cosmic_reader.wails",
 			OnSecondInstanceLaunch: func(data options.SecondInstanceData) {

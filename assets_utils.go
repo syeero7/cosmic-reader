@@ -65,6 +65,17 @@ func getHomeDir() (string, error) {
 	return dir, err
 }
 
+func getConfigDir() (string, error) {
+	config, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+
+	dir := path.Join(config, "cosmic-reader")
+	err = os.MkdirAll(dir, 0700)
+	return dir, err
+}
+
 func cacheThumbnail(file io.Reader, fname string) (string, error) {
 	cache, err := getCacheDir(CacheThumbnails)
 	if err != nil {

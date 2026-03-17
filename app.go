@@ -12,6 +12,7 @@ import (
 
 type App struct {
 	ctx context.Context
+	db  *Database
 }
 
 func NewApp() *App {
@@ -20,6 +21,19 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+}
+
+func (a *App) shutdown(ctx context.Context) {
+	a.db.close()
+}
+
+func (a *App) initializeDB() {
+	db, err := initDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	a.db = db
 }
 
 func (a *App) emitFileOpening(args []string) {
@@ -60,13 +74,13 @@ func (a *App) SelectFile() string {
 }
 
 func (a *App) DeleteComic(id string) {
-	if err := storage.removeArchive(id); err != nil {
+	if err := a.db.removeArchive(id); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func (a *App) AddComicBook(id, fpath string) *Archive {
-	arch, err := storage.addArchive(id, fpath, false)
+	arch, err := a.db.addArchive(id, fpath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -74,13 +88,13 @@ func (a *App) AddComicBook(id, fpath string) *Archive {
 	return arch
 }
 
-func (a *App) GetComicInfo() map[string]Archive {
-	state, err := storage.getState()
+func (a *App) GetComicInfo() map[string]*Archive {
+	archives, err := a.db.getAllArchives()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return state.Archives
+	return archives
 }
 
 func (a *App) OpenCBZFile() int {

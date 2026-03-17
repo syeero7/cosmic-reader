@@ -67,7 +67,7 @@ func extractComic(id, fpath string) (*Archive, error) {
 }
 
 func getComicPage(id string, page int) (*zip.File, error) {
-	fpath, err := storage.findArchive(id)
+	fpath, err := findArchive(id)
 	if err != nil {
 		return nil, err
 	}
