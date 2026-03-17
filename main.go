@@ -1,13 +1,11 @@
 package main
 
 import (
-	"context"
 	"embed"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 //go:embed all:frontend/dist
@@ -24,18 +22,11 @@ func main() {
 			Assets:     assets,
 			Middleware: newAssetsServer,
 		},
-		OnStartup: func(ctx context.Context) {
-			app.startup(ctx)
-			app.initializeDB()
-			app.emitFileOpening(nil)
-		},
+		OnStartup:  app.startup,
 		OnShutdown: app.shutdown,
 		SingleInstanceLock: &options.SingleInstanceLock{
-			UniqueId: "cosmic_reader.wails",
-			OnSecondInstanceLaunch: func(data options.SecondInstanceData) {
-				app.emitFileOpening(data.Args)
-				runtime.WindowShow(app.ctx)
-			},
+			UniqueId:               "cosmic_reader.wails",
+			OnSecondInstanceLaunch: app.secondInstanceLaunch,
 		},
 		Bind: []interface{}{
 			app,

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -21,10 +22,18 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	a.initializeDB()
+	a.emitFileOpening(nil)
 }
 
 func (a *App) shutdown(ctx context.Context) {
 	a.db.close()
+}
+
+func (a *App) secondInstanceLaunch(data options.SecondInstanceData) {
+	a.emitFileOpening(data.Args)
+	runtime.WindowUnminimise(a.ctx)
+	runtime.WindowShow(a.ctx)
 }
 
 func (a *App) initializeDB() {
