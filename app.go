@@ -64,6 +64,15 @@ func (a *App) emitFileOpening(args []string) {
 	}
 }
 
+func (a *App) GenerateULID() string {
+	id, err := generateULID()
+	if err != nil {
+		log.Println(err)
+	}
+
+	return id.String()
+}
+
 func (a *App) SelectFile() string {
 	opt := runtime.OpenDialogOptions{
 		Title:                "Select Comic Books",

@@ -1,12 +1,43 @@
 package main
 
 import (
+	"crypto/rand"
+	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
+	"github.com/oklog/ulid/v2"
 	"go.etcd.io/bbolt"
 )
+
+var ulidMutex sync.Mutex
+
+func generateULID() (ulid.ULID, error) {
+	ulidMutex.Lock()
+	defer ulidMutex.Unlock()
+	entropy := ulid.Monotonic(rand.Reader, 0)
+	return ulid.New(ulid.Now(), entropy)
+}
+
+func ulidToBytes(str string) []byte {
+	id, err := ulid.Parse(str)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return id.Bytes()
+}
+
+func ulidToString(b []byte) string {
+	var id ulid.ULID
+	if err := id.UnmarshalBinary(b); err != nil {
+		log.Fatal(err)
+	}
+
+	return id.String()
+}
 
 func (d *Database) compactDB() error {
 	lastCompacted, err := d.getLastCompacted()

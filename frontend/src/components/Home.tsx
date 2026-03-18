@@ -1,4 +1,10 @@
-import { AddComicBook, DeleteComic, OpenCBZFile, SelectFile } from "@wails/go/main/App";
+import {
+  AddComicBook,
+  DeleteComic,
+  GenerateULID,
+  OpenCBZFile,
+  SelectFile,
+} from "@wails/go/main/App";
 import type { main } from "@wails/go/models";
 import type { TargetedInputEvent } from "preact";
 import { useRef, useState } from "preact/compat";
@@ -25,7 +31,7 @@ export function Home() {
     const path = await SelectFile();
     if (!path) return;
 
-    const id = crypto.randomUUID();
+    const id = await GenerateULID();
     const tmp: main.Archive = { title: "Loading...", pageCount: 0, thumbnail: "" };
     dispatch({ type: "add_comics", payload: { [id]: tmp } });
     AddComicBook(id, path).then((v) => dispatch({ type: "add_comics", payload: { [id]: v } }));
@@ -47,7 +53,7 @@ export function Home() {
   const openCBZ = async () => {
     const pageCount = await OpenCBZFile();
     if (pageCount === 0) return;
-    router.navigateTo(`temp-comic: ${crypto.randomUUID()},${pageCount}`);
+    router.navigateTo(`temp-comic: ${await GenerateULID()},${pageCount}`);
   };
 
   const archives = !filterQuery

@@ -6,6 +6,8 @@ export function AddComicBook(arg1:string,arg2:string):Promise<main.Archive>;
 
 export function DeleteComic(arg1:string):Promise<void>;
 
+export function GenerateULID():Promise<string>;
+
 export function GetComicInfo():Promise<Record<string, main.Archive>>;
 
 export function GetInitialOpenedCBZ():Promise<number>;

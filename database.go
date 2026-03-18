@@ -88,7 +88,7 @@ func (d *Database) addArchive(id, fpath string) (*Archive, error) {
 			return err
 		}
 
-		return bucket.Put([]byte(id), byt)
+		return bucket.Put(ulidToBytes(id), byt)
 	})
 
 	return arch, err
@@ -98,7 +98,7 @@ func (d *Database) getArchive(id string) (*Archive, error) {
 	arch := new(Archive)
 	err := d.db.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte("archives"))
-		return json.Unmarshal(bucket.Get([]byte(id)), arch)
+		return json.Unmarshal(bucket.Get(ulidToBytes(id)), arch)
 	})
 
 	return arch, err
@@ -118,7 +118,7 @@ func (d *Database) getAllArchives() (map[string]*Archive, error) {
 				return err
 			}
 
-			archives[string(k)] = arch
+			archives[ulidToString(k)] = arch
 			return nil
 		})
 	})
@@ -146,7 +146,7 @@ func (d *Database) removeArchive(id string) error {
 	}
 
 	err = d.db.Update(func(tx *bbolt.Tx) error {
-		return tx.Bucket([]byte("archives")).Delete([]byte(id))
+		return tx.Bucket([]byte("archives")).Delete(ulidToBytes(id))
 	})
 
 	return err

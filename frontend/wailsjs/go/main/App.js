@@ -10,6 +10,10 @@ export function DeleteComic(arg1) {
   return window['go']['main']['App']['DeleteComic'](arg1);
 }
 
+export function GenerateULID() {
+  return window['go']['main']['App']['GenerateULID']();
+}
+
 export function GetComicInfo() {
   return window['go']['main']['App']['GetComicInfo']();
 }
