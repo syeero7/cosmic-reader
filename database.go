@@ -21,10 +21,6 @@ type Archive struct {
 	Thumbnail string `json:"thumbnail"`
 }
 
-type Settings struct {
-	LibraryDir string `json:"libraryDir"`
-}
-
 func initDB() (*Database, error) {
 	config, err := getConfigDir()
 	if err != nil {
@@ -61,24 +57,18 @@ func (d *Database) setLibraryDir(dirpath *string) error {
 			return err
 		}
 
-		settings := Settings{LibraryDir: *dirpath}
-		byt, err := json.Marshal(settings)
-		if err != nil {
-			return err
-		}
-
-		return bucket.Put([]byte("libraryDir"), byt)
+		return bucket.Put([]byte("library_dir"), []byte(*dirpath))
 	})
 }
 
-func (d *Database) getLibraryDir() (string, error) {
-	settings := new(Settings)
-	err := d.db.View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket([]byte("settings"))
-		return json.Unmarshal(bucket.Get([]byte("libraryDir")), settings)
+func (d *Database) getLibraryDir() string {
+	var libraryDir []byte
+	d.db.View(func(tx *bbolt.Tx) error {
+		libraryDir = tx.Bucket([]byte("settings")).Get([]byte("library_dir"))
+		return nil
 	})
 
-	return settings.LibraryDir, err
+	return string(libraryDir)
 }
 
 func (d *Database) addArchive(id, fpath string) (*Archive, error) {
