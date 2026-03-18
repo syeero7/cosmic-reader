@@ -6,6 +6,7 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/klauspost/compress v1.18.0
 	github.com/mholt/archives v0.1.5
+	github.com/oklog/ulid/v2 v2.1.1
 	github.com/wailsapp/wails/v2 v2.11.0
 	go.etcd.io/bbolt v1.4.3
 )
