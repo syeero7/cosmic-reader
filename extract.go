@@ -4,19 +4,12 @@ import (
 	"context"
 	"errors"
 	"io"
-	"os"
 
 	"github.com/klauspost/compress/zip"
 	"github.com/mholt/archives"
 )
 
-func extractComic(id, fpath string) (*Archive, error) {
-	file, err := os.Open(fpath)
-	if err != nil {
-		return nil, err
-	}
-
-	defer file.Close()
+func convertToCBZ(id, fpath string) (*Archive, error) {
 	ex := new(Extractor)
 	dst, cbz, err := ex.createCBZ(id)
 	if err != nil {
@@ -26,14 +19,8 @@ func extractComic(id, fpath string) (*Archive, error) {
 	defer dst.Close()
 	defer cbz.Close()
 
-	ctx := context.Background()
-	extr, err := ex.getExtractor(file, ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	err = extr.Extract(ctx, file, func(ctx context.Context, f archives.FileInfo) error {
-		if err := ex.extractComicTitle(&f, file.Name()); err != nil {
+	err = ex.extract(fpath, context.Background(), func(ctx context.Context, f archives.FileInfo) error {
+		if err := ex.extractComicTitle(&f, fpath); err != nil {
 			return err
 		}
 

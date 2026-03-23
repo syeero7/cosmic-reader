@@ -9,6 +9,7 @@ import (
 	"mime"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/klauspost/compress/zip"
@@ -26,6 +27,21 @@ type ComicMetadata struct {
 	Number    string `xml:"Number"`
 	Summary   string `xml:"Summary"`
 	PageCount int    `xml:"PageCount"`
+}
+
+func (ex *Extractor) extract(fpath string, ctx context.Context, fn func(ctx context.Context, f archives.FileInfo) error) error {
+	file, err := os.Open(fpath)
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+	extr, err := ex.getExtractor(file, ctx)
+	if err != nil {
+		return err
+	}
+
+	return extr.Extract(ctx, file, fn)
 }
 
 func (ex *Extractor) getExtractor(file *os.File, ctx context.Context) (archives.Extractor, error) {
@@ -139,11 +155,7 @@ func getFileType(name string) string {
 }
 
 func isSupported(fpath string) bool {
-	fileTypes := []string{"cbr", "cbz", "cb7", "cbt"}
-	for _, t := range fileTypes {
-		if strings.HasSuffix(fpath, t) {
-			return true
-		}
-	}
-	return false
+	fileTypes := []string{".cbr", ".cb7", ".cbt"}
+	ext := strings.ToLower(filepath.Ext(fpath))
+	return slices.Contains(fileTypes, ext)
 }

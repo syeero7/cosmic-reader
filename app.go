@@ -78,8 +78,8 @@ func (a *App) SelectFile() string {
 		Title:                "Select Comic Books",
 		CanCreateDirectories: false,
 		Filters: []runtime.FileFilter{{
-			DisplayName: "Comic Books (*.cbz, *.cbr, *.cb7)",
-			Pattern:     "*.cbz;*.cbr;*.cb7;*.cbt",
+			DisplayName: "Comic Books (*.cbr, *.cbt, *.cb7)",
+			Pattern:     "*.cbr;*.cb7;*.cbt",
 		}},
 	}
 
@@ -117,10 +117,10 @@ func (a *App) GetComicInfo() map[string]*Archive {
 
 func (a *App) OpenCBZFile() int {
 	opt := runtime.OpenDialogOptions{
-		Title:                "Open Comic Book Zip Archive",
+		Title:                "Open CBZ File",
 		CanCreateDirectories: false,
 		Filters: []runtime.FileFilter{{
-			DisplayName: "Comic Book Zip Archive *.cbz",
+			DisplayName: "Comic Book Zip *.cbz",
 			Pattern:     "*.cbz",
 		}},
 	}

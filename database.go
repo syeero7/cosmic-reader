@@ -72,7 +72,7 @@ func (d *Database) getLibraryDir() string {
 }
 
 func (d *Database) addArchive(id, fpath string) (*Archive, error) {
-	arch, err := extractComic(id, fpath)
+	arch, err := convertToCBZ(id, fpath)
 	if err != nil {
 		return nil, err
 	}
