@@ -20,7 +20,13 @@ func convertToCBZ(id, fpath string) (*Archive, error) {
 	defer cbz.Close()
 
 	err = ex.extract(fpath, context.Background(), func(ctx context.Context, f archives.FileInfo) error {
-		if err := ex.extractComicTitle(&f, fpath); err != nil {
+		tmpf, err := f.Open()
+		if err != nil {
+			return err
+		}
+
+		defer tmpf.Close()
+		if err := ex.extractComicTitle(tmpf, f.Name(), fpath); err != nil {
 			return err
 		}
 
@@ -28,12 +34,6 @@ func convertToCBZ(id, fpath string) (*Archive, error) {
 			return nil
 		}
 
-		tmpf, err := f.Open()
-		if err != nil {
-			return err
-		}
-
-		defer tmpf.Close()
 		imgw, err := ex.createZipEntry(cbz, tmpf)
 		if err != nil {
 			return err
@@ -64,6 +64,7 @@ func getComicPage(id string, page int) (*zip.File, error) {
 		return nil, err
 	}
 
+	// close zip file
 	idx := page - 1
 	if idx < 0 || idx >= len(cbz.File) {
 		return nil, errors.New("invalid page index")
