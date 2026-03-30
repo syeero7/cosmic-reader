@@ -21,12 +21,7 @@ func newAssetsServer(next http.Handler) http.Handler {
 }
 
 func thumbnailHandler(w http.ResponseWriter, r *http.Request) {
-	fname := r.PathValue("image")
-	if getFileType(fname) != "image" {
-		http.Error(w, "requested file is not an image", http.StatusBadRequest)
-		return
-	}
-
+	fname := r.PathValue("image") + ".jpeg"
 	img, err := getCachedThumbnail(fname)
 	if err != nil {
 		if errors.Is(err, CachedThumbnailNotFoundError) {

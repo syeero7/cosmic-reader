@@ -110,8 +110,9 @@ function ComicCard({ comic, deleteFn, navigateFn }: ComicCardProps) {
       </button>
 
       <img
-        src={`/thumbnails/${comic.thumbnail}`}
+        src={`/thumbnails/${comic.id}`}
         alt={`${comic.title} cover`}
+        key={comic.title}
         onError={(e) => {
           (e.target as HTMLImageElement).src = fallbackImg;
         }}
