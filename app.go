@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,6 +31,11 @@ func (a *App) shutdown(ctx context.Context) {
 	a.db.close()
 }
 
+func (a *App) assetServer(next http.Handler) http.Handler {
+	a.initializeDB()
+	return newAssetsServer(next, a.db)
+}
+
 func (a *App) secondInstanceLaunch(data options.SecondInstanceData) {
 	a.emitFileOpening(data.Args)
 	runtime.WindowUnminimise(a.ctx)
@@ -37,6 +43,10 @@ func (a *App) secondInstanceLaunch(data options.SecondInstanceData) {
 }
 
 func (a *App) initializeDB() {
+	if a.db != nil {
+		return
+	}
+
 	db, err := initDB()
 	if err != nil {
 		log.Fatal(err)

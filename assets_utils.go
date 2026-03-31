@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"io"
 	"os"
@@ -10,7 +11,7 @@ import (
 	"github.com/disintegration/imaging"
 )
 
-var CachedThumbnailNotFoundError = errors.New("cached thumbnail not found")
+var ThumbnailNotFoundError = errors.New("cached thumbnail not found")
 
 type CacheDirName string
 
@@ -40,7 +41,7 @@ func getCachedThumbnail(fname string) (string, error) {
 		}
 	}
 
-	return "", CachedThumbnailNotFoundError
+	return "", ThumbnailNotFoundError
 }
 
 func getCacheDir(dname CacheDirName) (string, error) {
@@ -76,21 +77,16 @@ func getConfigDir() (string, error) {
 	return dir, err
 }
 
-func cacheThumbnail(file io.Reader, fname string) (string, error) {
-	cache, err := getCacheDir(CacheThumbnails)
-	if err != nil {
-		return "", err
-	}
-
-	tmbpath := filepath.Join(cache, fname+".jpeg")
+func createThumbnail(file io.Reader) ([]byte, error) {
 	img, err := imaging.Decode(file)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
+	buf := new(bytes.Buffer)
 	thumb := imaging.Resize(img, 0, 230, imaging.Linear)
-	err = imaging.Save(thumb, tmbpath, imaging.JPEGQuality(80))
-	return tmbpath, err
+	err = imaging.Encode(buf, thumb, imaging.JPEG, imaging.JPEGQuality(80))
+	return buf.Bytes(), err
 }
 
 func deleteCachedThumbnails(fname *string) error {

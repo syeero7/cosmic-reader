@@ -36,26 +36,31 @@ func (ex *Extractor) extract(fpath string, ctx context.Context, fn func(ctx cont
 	}
 
 	defer file.Close()
-	extr, err := ex.getExtractor(file, ctx)
+	extr, ext, err := ex.getExtractor(file, ctx)
 	if err != nil {
 		return err
 	}
 
-	return extr.Extract(ctx, file, fn)
+	if ext != ".cbz" {
+		return extr.Extract(ctx, file, fn)
+	}
+
+	return nil
 }
 
-func (ex *Extractor) getExtractor(file *os.File, ctx context.Context) (archives.Extractor, error) {
+func (ex *Extractor) getExtractor(file *os.File, ctx context.Context) (archives.Extractor, string, error) {
 	format, _, err := archives.Identify(ctx, file.Name(), file)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
+	ext := strings.ToLower(format.Extension())
 	extr, ok := format.(archives.Extractor)
 	if !ok || !isSupported(file.Name()) {
-		return nil, fmt.Errorf("filetype '%s' is not supported", filepath.Ext(file.Name()))
+		return nil, "", fmt.Errorf("filetype '%s' is not supported", filepath.Ext(file.Name()))
 	}
 
-	return extr, nil
+	return extr, ext, nil
 }
 
 func (ex *Extractor) createCBZ(filename string) (*os.File, *zip.Writer, error) {
@@ -108,16 +113,6 @@ func (ex *Extractor) extractComicTitle(xmlf fs.File, name, fpath string) error {
 	}
 
 	ex.archive.Title = title
-	return nil
-}
-
-func (ex *Extractor) extractThumbnail(file io.Reader, id string) error {
-	tmbpath, err := cacheThumbnail(file, id)
-	if err != nil {
-		return err
-	}
-
-	ex.archive.Thumbnail = filepath.Base(tmbpath)
 	return nil
 }
 

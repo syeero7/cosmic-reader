@@ -20,7 +20,7 @@ func main() {
 		Fullscreen: true,
 		AssetServer: &assetserver.Options{
 			Assets:     assets,
-			Middleware: newAssetsServer,
+			Middleware: app.assetServer,
 		},
 		OnStartup:  app.startup,
 		OnShutdown: app.shutdown,

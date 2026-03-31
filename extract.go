@@ -9,7 +9,7 @@ import (
 	"github.com/mholt/archives"
 )
 
-func convertToCBZ(id, fpath string) (*Archive, error) {
+func convertToCBZ(id, fpath string, saveThumbnail func(string, io.Reader) error) (*Archive, error) {
 	ex := new(Extractor)
 	dst, cbz, err := ex.createCBZ(id)
 	if err != nil {
@@ -42,7 +42,7 @@ func convertToCBZ(id, fpath string) (*Archive, error) {
 		defer func() { ex.counter += 1 }()
 		if ex.counter == 0 {
 			tr := io.TeeReader(tmpf, imgw)
-			return ex.extractThumbnail(tr, id)
+			return saveThumbnail(id, tr)
 		}
 
 		_, err = io.Copy(imgw, tmpf)

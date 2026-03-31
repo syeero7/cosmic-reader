@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -72,7 +73,7 @@ func (d *Database) getLibraryDir() string {
 }
 
 func (d *Database) addArchive(id, fpath string) (*Archive, error) {
-	arch, err := convertToCBZ(id, fpath)
+	arch, err := convertToCBZ(id, fpath, d.addThumbnail)
 	if err != nil {
 		return nil, err
 	}
@@ -136,20 +137,49 @@ func (d *Database) removeArchive(id string) error {
 		return err
 	}
 
-	arch, err := d.getArchive(id)
+	return d.db.Update(func(tx *bbolt.Tx) error {
+		uid := ulidToBytes(id)
+		if err := tx.Bucket([]byte("archives")).Delete(uid); err != nil {
+			return err
+		}
+
+		return tx.Bucket([]byte("thumbnails")).Delete(uid)
+	})
+}
+
+func (d *Database) addThumbnail(id string, file io.Reader) error {
+	img, err := createThumbnail(file)
 	if err != nil {
 		return err
 	}
 
-	if err := deleteCachedThumbnails(&arch.Thumbnail); err != nil && !os.IsNotExist(err) {
-		return err
-	}
+	return d.db.Update(func(tx *bbolt.Tx) error {
+		bucket, err := tx.CreateBucketIfNotExists([]byte("thumbnails"))
+		if err != nil {
+			return err
+		}
 
-	err = d.db.Update(func(tx *bbolt.Tx) error {
-		return tx.Bucket([]byte("archives")).Delete(ulidToBytes(id))
+		return bucket.Put(ulidToBytes(id), img)
+	})
+}
+
+func (d *Database) getThumbnail(id string) ([]byte, error) {
+	byt := []byte{}
+	err := d.db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte("thumbnails"))
+		if bucket == nil {
+			return errors.New("bucket not found")
+		}
+
+		byt = bucket.Get(ulidToBytes(id))
+		if byt == nil {
+			return ThumbnailNotFoundError
+		}
+
+		return nil
 	})
 
-	return err
+	return byt, err
 }
 
 var ArchiveFoundError = errors.New("archive found")

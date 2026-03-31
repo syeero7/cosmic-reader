@@ -12,19 +12,18 @@ import (
 	"github.com/klauspost/compress/zip"
 )
 
-func newAssetsServer(next http.Handler) http.Handler {
+func newAssetsServer(next http.Handler, db *Database) http.Handler {
 	as := http.NewServeMux()
-	as.HandleFunc("/thumbnails/{image}", thumbnailHandler)
+	as.HandleFunc("/thumbnails/{image}", databaseMiddleware(db, thumbnailHandler))
 	as.HandleFunc("/comics/{comicId}/pages/{page}", comicPageHandler)
 	as.Handle("/", next)
 	return as
 }
 
-func thumbnailHandler(w http.ResponseWriter, r *http.Request) {
-	fname := r.PathValue("image") + ".jpeg"
-	img, err := getCachedThumbnail(fname)
+func thumbnailHandler(db *Database, w http.ResponseWriter, r *http.Request) {
+	img, err := db.getThumbnail(r.PathValue("image"))
 	if err != nil {
-		if errors.Is(err, CachedThumbnailNotFoundError) {
+		if errors.Is(err, ThumbnailNotFoundError) {
 			http.NotFound(w, r)
 			return
 		}
@@ -33,7 +32,9 @@ func thumbnailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.ServeFile(w, r, img)
+	w.Header().Set("Cache-Control", "max-age=172800")
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Write(img)
 }
 
 func comicPageHandler(w http.ResponseWriter, r *http.Request) {
@@ -67,4 +68,10 @@ func comicPageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "max-age=172800")
 	w.Header().Set("Content-Type", mime.TypeByExtension(filepath.Ext(file.Name)))
 	io.Copy(w, img)
+}
+
+func databaseMiddleware(db *Database, fn func(db *Database, w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fn(db, w, r)
+	}
 }
