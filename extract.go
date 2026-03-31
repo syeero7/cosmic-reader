@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
 
 	"github.com/klauspost/compress/zip"
 	"github.com/mholt/archives"
@@ -48,6 +49,10 @@ func convertToCBZ(id, fpath string, saveThumbnail func(string, io.Reader) error)
 		_, err = io.Copy(imgw, tmpf)
 		return err
 	})
+
+	if err != nil {
+		defer os.Remove(dst.Name())
+	}
 
 	ex.archive.PageCount = ex.counter
 	return &ex.archive, err
