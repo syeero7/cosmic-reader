@@ -15,7 +15,7 @@ import (
 func newAssetsServer(next http.Handler, db *Database) http.Handler {
 	as := http.NewServeMux()
 	as.HandleFunc("/thumbnails/{image}", databaseMiddleware(db, thumbnailHandler))
-	as.HandleFunc("/comics/{comicId}/pages/{page}", comicPageHandler)
+	as.HandleFunc("/comics/{comicId}/pages/{page}", databaseMiddleware(db, comicPageHandler))
 	as.Handle("/", next)
 	return as
 }
@@ -37,9 +37,8 @@ func thumbnailHandler(db *Database, w http.ResponseWriter, r *http.Request) {
 	w.Write(img)
 }
 
-func comicPageHandler(w http.ResponseWriter, r *http.Request) {
+func comicPageHandler(db *Database, w http.ResponseWriter, r *http.Request) {
 	comid := r.PathValue("comicId")
-	tempComic := r.URL.Query().Get("temp") == "true"
 	pageN, err := strconv.Atoi(r.PathValue("page"))
 	if err != nil || strings.TrimSpace(comid) == "" || pageN <= 0 {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -47,10 +46,16 @@ func comicPageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var file *zip.File
-	if tempComic {
+	if r.URL.Query().Get("temp") == "true" {
 		file, err = getTempComicPage(pageN)
 	} else {
-		file, err = getComicPage(comid, pageN)
+		fpath, err := db.getAbsolutePath(comid)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		file, err = getComicPage(fpath, pageN)
 	}
 
 	if err != nil {

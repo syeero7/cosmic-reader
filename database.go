@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
@@ -18,6 +17,7 @@ type Database struct {
 
 type Archive struct {
 	Title string `json:"title"`
+	Path  string `json:"path"`
 }
 
 func initDB() (*Database, error) {
@@ -126,7 +126,7 @@ func (d *Database) getAllArchives() (map[string]string, error) {
 }
 
 func (d *Database) removeArchive(id string) error {
-	fpath, err := findArchive(id)
+	fpath, err := d.getAbsolutePath(id)
 	if err != nil {
 		return err
 	}
@@ -180,32 +180,20 @@ func (d *Database) getThumbnail(id string) ([]byte, error) {
 	return byt, err
 }
 
-var ArchiveFoundError = errors.New("archive found")
+func (d *Database) getAbsolutePath(id string) (string, error) {
+	arch, err := d.getArchive(id)
+	if err != nil {
+		return "", err
+	}
 
-// find archive path
-func findArchive(id string) (string, error) {
+	if arch.Path != filepath.Base(arch.Path) {
+		return arch.Path, nil
+	}
+
 	home, err := getHomeDir()
 	if err != nil {
 		return "", err
 	}
 
-	fpath := ""
-	err = filepath.WalkDir(home, func(path string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if !entry.IsDir() && entry.Name() == id+filepath.Ext(entry.Name()) {
-			fpath = path
-			return ArchiveFoundError
-		}
-
-		return nil
-	})
-
-	if err != nil && !errors.Is(err, ArchiveFoundError) {
-		return "", err
-	}
-
-	return fpath, nil
+	return filepath.Join(home, arch.Path), nil
 }

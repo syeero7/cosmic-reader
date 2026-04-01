@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/klauspost/compress/zip"
 	"github.com/mholt/archives"
@@ -54,21 +55,17 @@ func convertToCBZ(id, fpath string, saveThumbnail func(string, io.Reader) error)
 		defer os.Remove(dst.Name())
 	}
 
+	ex.archive.Path = filepath.Base(dst.Name())
 	return &ex.archive, err
 }
 
-func getComicPage(id string, page int) (*zip.File, error) {
-	fpath, err := findArchive(id)
-	if err != nil {
-		return nil, err
-	}
-
+func getComicPage(fpath string, page int) (*zip.File, error) {
+	//TODO: close zip file
 	cbz, err := zip.OpenReader(fpath)
 	if err != nil {
 		return nil, err
 	}
 
-	// close zip file
 	idx := page - 1
 	if idx < 0 || idx >= len(cbz.File) {
 		return nil, errors.New("invalid page index")
@@ -119,6 +116,7 @@ func getTempComicPage(page int) (*zip.File, error) {
 		return nil, errors.New("temporary comic not found")
 	}
 
+	//TODO: close zip file
 	cbz, err := zip.OpenReader(tempComic.path)
 	if err != nil {
 		return nil, err
