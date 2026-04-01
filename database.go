@@ -17,9 +17,7 @@ type Database struct {
 }
 
 type Archive struct {
-	PageCount int    `json:"pageCount"`
-	Title     string `json:"title"`
-	Thumbnail string `json:"thumbnail"`
+	Title string `json:"title"`
 }
 
 func initDB() (*Database, error) {

@@ -18,7 +18,6 @@ import (
 
 type Extractor struct {
 	archive Archive
-	counter int
 }
 
 type ComicMetadata struct {

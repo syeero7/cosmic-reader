@@ -19,7 +19,7 @@ func convertToCBZ(id, fpath string, saveThumbnail func(string, io.Reader) error)
 
 	defer dst.Close()
 	defer cbz.Close()
-
+	firstPage := true
 	err = ex.extract(fpath, context.Background(), func(ctx context.Context, f archives.FileInfo) error {
 		tmpf, err := f.Open()
 		if err != nil {
@@ -40,8 +40,8 @@ func convertToCBZ(id, fpath string, saveThumbnail func(string, io.Reader) error)
 			return err
 		}
 
-		defer func() { ex.counter += 1 }()
-		if ex.counter == 0 {
+		if firstPage {
+			firstPage = false
 			tr := io.TeeReader(tmpf, imgw)
 			return saveThumbnail(id, tr)
 		}
@@ -54,7 +54,6 @@ func convertToCBZ(id, fpath string, saveThumbnail func(string, io.Reader) error)
 		defer os.Remove(dst.Name())
 	}
 
-	ex.archive.PageCount = ex.counter
 	return &ex.archive, err
 }
 
