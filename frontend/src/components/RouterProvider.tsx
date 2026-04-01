@@ -1,14 +1,15 @@
 import { createContext } from "preact";
 import type { PropsWithChildren } from "preact/compat";
 import { useContext, useState } from "preact/hooks";
+import type { ComicInfo } from "./ComicProvider";
 
 type Modals = "kbd-shortcuts" | "app-error";
-type Routes = "home" | `comic-id: ${string}` | `temp-comic: ${string},${string}`;
+type Route = { name: "home" } | { name: "comic-view" | "temp-comic"; data: ComicInfo };
 type RouterCtx = {
-  navigateTo: (to: Routes) => void;
+  navigateTo: (to: Route) => void;
   openModal: (modal: Modals) => void;
   closeModal: () => void;
-  activeRoute: Routes;
+  activeRoute: Route;
   activeModal?: Modals;
 };
 
@@ -22,7 +23,7 @@ export function useRouter() {
 
 export function RouterProvider({ children }: PropsWithChildren) {
   const [activeModal, setActiveModal] = useState<Modals | undefined>(undefined);
-  const [activeRoute, setActiveRoute] = useState<Routes>("home");
+  const [activeRoute, setActiveRoute] = useState<Route>({ name: "home" });
 
   const value: RouterCtx = {
     navigateTo: setActiveRoute,

@@ -103,8 +103,8 @@ func (d *Database) getArchive(id string) (*Archive, error) {
 	return arch, err
 }
 
-func (d *Database) getAllArchives() (map[string]*Archive, error) {
-	archives := make(map[string]*Archive)
+func (d *Database) getAllArchives() (map[string]string, error) {
+	archives := make(map[string]string)
 	err := d.db.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte("archives"))
 		if bucket == nil {
@@ -117,7 +117,7 @@ func (d *Database) getAllArchives() (map[string]*Archive, error) {
 				return err
 			}
 
-			archives[ulidToString(k)] = arch
+			archives[ulidToString(k)] = arch.Title
 			return nil
 		})
 	})

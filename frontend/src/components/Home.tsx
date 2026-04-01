@@ -5,7 +5,6 @@ import {
   OpenCBZFile,
   SelectFile,
 } from "@wails/go/main/App";
-import type { main } from "@wails/go/models";
 import type { TargetedInputEvent } from "preact";
 import { useRef, useState } from "preact/compat";
 import fallbackImg from "@/assets/cosmic_fallback.webp";
@@ -32,34 +31,50 @@ export function Home() {
     if (!path) return;
 
     const id = await GenerateULID();
-    const tmp: main.Archive = { title: "Loading...", pageCount: 0, thumbnail: "" };
-    dispatch({ type: "add_comics", payload: { [id]: tmp } });
+    dispatch({ type: "add_comics", payload: { [id]: "Loading..." } });
     AddComicBook(id, path).then((v) => dispatch({ type: "add_comics", payload: { [id]: v } }));
   };
 
   const deleteComic = (id: string) => {
     return async () => {
       await DeleteComic(id);
-      dispatch({ type: "delete_comic", payload: id as ReturnType<typeof crypto.randomUUID> });
+      dispatch({ type: "delete_comic", payload: id });
     };
   };
 
   const openComic = (id: string) => {
+    // TODO: get real values from backend
     return () => {
-      router.navigateTo(`comic-id: ${id as ReturnType<typeof crypto.randomUUID>}`);
+      router.navigateTo({
+        name: "comic-view",
+        data: {
+          id,
+          title: "",
+          pageCount: 0,
+        },
+      });
     };
   };
 
   const openCBZ = async () => {
     const pageCount = await OpenCBZFile();
     if (pageCount === 0) return;
-    router.navigateTo(`temp-comic: ${await GenerateULID()},${pageCount}`);
+    const id = await GenerateULID();
+    // TODO: get id, title and page count when opening cbz file
+    router.navigateTo({
+      name: "temp-comic",
+      data: {
+        id,
+        title: "",
+        pageCount,
+      },
+    });
   };
 
   const archives = !filterQuery
     ? Object.entries(comics)
-    : Object.entries(comics).filter(([_k, v]) =>
-        v.title.toLowerCase().includes(filterQuery.toLowerCase()),
+    : Object.entries(comics).filter(([_k, title]) =>
+        title.toLowerCase().includes(filterQuery.toLowerCase()),
       );
 
   return (
@@ -81,12 +96,12 @@ export function Home() {
       </header>
 
       <div className="comic-grid">
-        {archives.map(([k, v]) => (
+        {archives.map(([id, title]) => (
           <ComicCard
-            key={k}
-            comic={{ ...v, id: k }}
-            deleteFn={deleteComic(k)}
-            navigateFn={openComic(k)}
+            key={id}
+            comic={{ id, title }}
+            deleteFn={deleteComic(id)}
+            navigateFn={openComic(id)}
           />
         ))}
       </div>
@@ -95,13 +110,13 @@ export function Home() {
 }
 
 type ComicCardProps = {
-  comic: main.Archive & { id: string };
+  comic: { id: string; title: string };
   deleteFn: () => void;
   navigateFn: () => void;
 };
 
 function ComicCard({ comic, deleteFn, navigateFn }: ComicCardProps) {
-  const temporary = comic.title.startsWith("Loading") && comic.pageCount === 0;
+  const temporary = comic.title.startsWith("Loading");
 
   return (
     <article className={`comic-card${temporary ? " loading" : ""}`}>

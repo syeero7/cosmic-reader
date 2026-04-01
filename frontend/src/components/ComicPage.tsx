@@ -1,4 +1,3 @@
-import type { main } from "@wails/go/models";
 import type { TargetedInputEvent } from "preact";
 import {
   type Dispatch,
@@ -8,7 +7,7 @@ import {
   useRef,
   useState,
 } from "preact/hooks";
-import { useComics } from "./ComicProvider";
+import type { ComicInfo } from "./ComicProvider";
 import { useRouter } from "./RouterProvider";
 import { useShortcut } from "./ShortcutProvider";
 import {
@@ -22,35 +21,25 @@ import {
 } from "./SVG";
 
 type ImageOrientation = 0 | 90 | -90 | 180;
-
 type ComicPageProps = {
-  comicId: string;
-  tempComic?: Pick<main.Archive, "pageCount">;
+  comic: ComicInfo & { temp?: boolean };
 };
 
 const getInitialPageState = (pageCount?: number) => {
   return { prev: 0, current: pageCount ? 1 : 0, next: pageCount ? Math.min(2, pageCount) : 0 };
 };
 
-export function ComicPage({ comicId, tempComic }: ComicPageProps) {
+export function ComicPage({ comic }: ComicPageProps) {
   const router = useRouter();
-  const { comics } = useComics();
-  const selectedComic = tempComic ? tempComic : comics[comicId];
-  const [pages, setPages] = useState(() => getInitialPageState(selectedComic.pageCount));
+  const [pages, setPages] = useState(() => getInitialPageState(comic.pageCount));
   const [orientation, setOrientation] = useState<ImageOrientation>(0);
 
-  if (!selectedComic) {
-    router.navigateTo("home");
-    return;
-  }
-
   const landscape = [-90, 90].includes(orientation);
-
   const styles = {
     "--comic-page-orientation": `rotate(${orientation}deg)`,
     "--comic-page-width": `100${landscape ? "vh" : "vw"}`,
     "--comic-page-height": `100${landscape ? "vw" : "vh"}`,
-    "--comic-page-url": `url(/comics/${comicId}/pages/${pages.current}?temp=${!!tempComic})`,
+    "--comic-page-url": `url(/comics/${comic.id}/pages/${pages.current}?temp=${!!comic.temp})`,
   };
 
   return (
@@ -60,8 +49,8 @@ export function ComicPage({ comicId, tempComic }: ComicPageProps) {
           pages={pages}
           setPages={setPages}
           setOrientation={setOrientation}
-          pageCount={selectedComic.pageCount}
-          navigateToHome={() => router.navigateTo("home")}
+          pageCount={comic.pageCount}
+          navigateToHome={() => router.navigateTo({ name: "home" })}
         />
       </div>
     </main>

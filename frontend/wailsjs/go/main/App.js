@@ -14,8 +14,8 @@ export function GenerateULID() {
   return window['go']['main']['App']['GenerateULID']();
 }
 
-export function GetComicInfo() {
-  return window['go']['main']['App']['GetComicInfo']();
+export function GetComicList() {
+  return window['go']['main']['App']['GetComicList']();
 }
 
 export function GetInitialOpenedCBZ() {

@@ -1,10 +1,11 @@
-import { GetComicInfo } from "@wails/go/main/App";
-import type { main } from "@wails/go/models";
+import { GetComicList } from "@wails/go/main/App";
 import { createContext } from "preact";
 import { type PropsWithChildren, useContext, useEffect, useReducer } from "preact/compat";
 
+export type ComicInfo = { id: string; title: string; pageCount: number };
+
 type ComicCtx = {
-  comics: Record<string, main.Archive>;
+  comics: Record<string, string>;
   dispatch: (action: ReducerAction) => void;
 };
 
@@ -20,7 +21,7 @@ export function ComicProvider({ children }: PropsWithChildren) {
   const [comics, dispatch] = useReducer(reducer, {});
   useEffect(() => {
     (async () => {
-      const res = await GetComicInfo();
+      const res = await GetComicList();
       dispatch({ type: "add_comics", payload: res });
     })();
   }, []);
@@ -29,7 +30,7 @@ export function ComicProvider({ children }: PropsWithChildren) {
 
 type ReducerAction = {
   type: "add_comics" | "delete_comic";
-  payload: ComicCtx["comics"] | ReturnType<typeof crypto.randomUUID>;
+  payload: ComicCtx["comics"] | string;
 };
 
 function reducer(state: ComicCtx["comics"], action: ReducerAction) {

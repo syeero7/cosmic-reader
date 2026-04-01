@@ -27,16 +27,12 @@ function RouterController() {
   useOpenCBZ(navigateTo);
   let Route = Home;
 
-  const comicPrefix = "comic-id: ";
-  if (activeRoute.startsWith(comicPrefix)) {
-    const comicId = activeRoute.slice(comicPrefix.length);
-    Route = () => <ComicPage comicId={comicId} />;
+  if (activeRoute.name === "comic-view") {
+    Route = () => <ComicPage comic={activeRoute.data} />;
   }
 
-  const tempComicPrefix = "temp-comic: ";
-  if (activeRoute.startsWith(tempComicPrefix)) {
-    const [comicId, pageCount] = activeRoute.slice(tempComicPrefix.length).split(",");
-    Route = () => <ComicPage comicId={comicId} tempComic={{ pageCount: Number(pageCount) }} />;
+  if (activeRoute.name === "temp-comic") {
+    Route = () => <ComicPage comic={{ ...activeRoute.data, temp: true }} />;
   }
 
   useShortcut("Control+Shift+f", toggleFullscreen);
@@ -69,7 +65,15 @@ function useOpenCBZ(navigationFn: ReturnType<typeof useRouter>["navigateTo"]) {
   useEffect(() => {
     const handler = (data: unknown) => {
       if (typeof data !== "number" || data === 0) return;
-      navigationFn(`temp-comic: ${crypto.randomUUID()},${data}`);
+      // TODO: use ulid and get data as ComicInfo from backend
+      navigationFn({
+        name: "temp-comic",
+        data: {
+          id: crypto.randomUUID(),
+          title: "",
+          pageCount: data,
+        },
+      });
     };
 
     GetInitialOpenedCBZ().then(handler);

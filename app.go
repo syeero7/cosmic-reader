@@ -107,16 +107,16 @@ func (a *App) DeleteComic(id string) {
 	}
 }
 
-func (a *App) AddComicBook(id, fpath string) *Archive {
+func (a *App) AddComicBook(id, fpath string) string {
 	arch, err := a.db.addArchive(id, fpath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return arch
+	return arch.Title
 }
 
-func (a *App) GetComicInfo() map[string]*Archive {
+func (a *App) GetComicList() map[string]string {
 	archives, err := a.db.getAllArchives()
 	if err != nil {
 		log.Fatal(err)
