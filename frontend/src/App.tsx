@@ -1,4 +1,5 @@
 import { GetInitialOpenedCBZ } from "@wails/go/main/App";
+import type { main } from "@wails/go/models";
 import { Quit, WindowFullscreen, WindowIsFullscreen, WindowUnfullscreen } from "@wails/runtime";
 import { EventsOff, EventsOn } from "@wails/runtime/runtime";
 import { useEffect } from "preact/hooks";
@@ -31,10 +32,6 @@ function RouterController() {
     Route = () => <ComicPage comic={activeRoute.data} />;
   }
 
-  if (activeRoute.name === "temp-comic") {
-    Route = () => <ComicPage comic={{ ...activeRoute.data, temp: true }} />;
-  }
-
   useShortcut("Control+Shift+f", toggleFullscreen);
   useShortcut("Control+q", Quit);
 
@@ -63,17 +60,9 @@ function useOpenCBZ(navigationFn: ReturnType<typeof useRouter>["navigateTo"]) {
   const eventName = "comic-opened";
 
   useEffect(() => {
-    const handler = (data: unknown) => {
-      if (typeof data !== "number" || data === 0) return;
-      // TODO: use ulid and get data as ComicInfo from backend
-      navigationFn({
-        name: "temp-comic",
-        data: {
-          id: crypto.randomUUID(),
-          title: "",
-          pageCount: data,
-        },
-      });
+    const handler = (data: main.ComicInfo) => {
+      if (!("pageCount" in data) || data?.pageCount <= 0) return;
+      navigationFn({ name: "comic-view", data });
     };
 
     GetInitialOpenedCBZ().then(handler);

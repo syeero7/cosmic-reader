@@ -1,3 +1,4 @@
+import type { main } from "@wails/go/models";
 import type { TargetedInputEvent } from "preact";
 import {
   type Dispatch,
@@ -7,7 +8,6 @@ import {
   useRef,
   useState,
 } from "preact/hooks";
-import type { ComicInfo } from "./ComicProvider";
 import { useRouter } from "./RouterProvider";
 import { useShortcut } from "./ShortcutProvider";
 import {
@@ -21,9 +21,7 @@ import {
 } from "./SVG";
 
 type ImageOrientation = 0 | 90 | -90 | 180;
-type ComicPageProps = {
-  comic: ComicInfo & { temp?: boolean };
-};
+type ComicPageProps = { comic: main.ComicInfo };
 
 const getInitialPageState = (pageCount?: number) => {
   return { prev: 0, current: pageCount ? 1 : 0, next: pageCount ? Math.min(2, pageCount) : 0 };
@@ -39,7 +37,7 @@ export function ComicPage({ comic }: ComicPageProps) {
     "--comic-page-orientation": `rotate(${orientation}deg)`,
     "--comic-page-width": `100${landscape ? "vh" : "vw"}`,
     "--comic-page-height": `100${landscape ? "vw" : "vh"}`,
-    "--comic-page-url": `url(/comics/${comic.id}/pages/${pages.current}?temp=${!!comic.temp})`,
+    "--comic-page-url": `url(/pages/${pages.current})`,
   };
 
   return (

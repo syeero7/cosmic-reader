@@ -28,6 +28,7 @@ func (a *App) startup(ctx context.Context) {
 }
 
 func (a *App) shutdown(ctx context.Context) {
+	openedCBZ.reset()
 	a.db.close()
 }
 
@@ -65,12 +66,12 @@ func (a *App) emitFileOpening(args []string) {
 	}
 
 	if fpath := args[1]; strings.ToLower(filepath.Ext(fpath)) == ".cbz" {
-		pages, err := extractTempComic(fpath)
-		if err != nil {
+
+		if err := openedCBZ.extract(fpath); err != nil {
 			log.Fatal(err)
 		}
 
-		runtime.EventsEmit(a.ctx, "comic-opened", pages)
+		runtime.EventsEmit(a.ctx, "comic-opened", openedCBZ.getInfo())
 	}
 }
 
@@ -83,14 +84,30 @@ func (a *App) GenerateULID() string {
 	return id.String()
 }
 
-func (a *App) SelectFile() string {
+func (a *App) SelectAnyComic() string {
+	return a.selectFile(false)
+}
+
+func (a *App) SelectOnlyCBZ() string {
+	return a.selectFile(true)
+}
+
+func (a *App) selectFile(onlyCBZ bool) string {
 	opt := runtime.OpenDialogOptions{
 		Title:                "Select Comic Books",
 		CanCreateDirectories: false,
 		Filters: []runtime.FileFilter{{
-			DisplayName: "Comic Books (*.cbr, *.cbt, *.cb7)",
-			Pattern:     "*.cbr;*.cb7;*.cbt",
+			DisplayName: "Comic Books (*.cbz, *.cbr, *.cbt, *.cb7)",
+			Pattern:     "*.cbz;*.cbr;*.cb7;*.cbt",
 		}},
+	}
+
+	if onlyCBZ {
+		opt.Title = "Open a CBZ File"
+		opt.Filters = []runtime.FileFilter{{
+			DisplayName: "Comic Book Zip *.cbz",
+			Pattern:     "*.cbz",
+		}}
 	}
 
 	fpath, err := runtime.OpenFileDialog(a.ctx, opt)
@@ -102,12 +119,14 @@ func (a *App) SelectFile() string {
 }
 
 func (a *App) DeleteComic(id string) {
+	openedCBZ.reset()
 	if err := a.db.removeArchive(id); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func (a *App) AddComicBook(id, fpath string) string {
+	openedCBZ.reset()
 	arch, err := a.db.addArchive(id, fpath)
 	if err != nil {
 		log.Fatal(err)
@@ -125,33 +144,35 @@ func (a *App) GetComicList() map[string]string {
 	return archives
 }
 
-func (a *App) OpenCBZFile() int {
-	opt := runtime.OpenDialogOptions{
-		Title:                "Open CBZ File",
-		CanCreateDirectories: false,
-		Filters: []runtime.FileFilter{{
-			DisplayName: "Comic Book Zip *.cbz",
-			Pattern:     "*.cbz",
-		}},
-	}
-
-	fpath, err := runtime.OpenFileDialog(a.ctx, opt)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if fpath == "" {
-		return 0
-	}
-
-	pages, err := extractTempComic(fpath)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return pages
+func (a *App) OpenCBZByID(id string) *ComicInfo {
+	return a.openCBZFile(&id, nil)
 }
 
-func (a *App) GetInitialOpenedCBZ() int {
-	return getTempComicInfo()
+func (a *App) OpenCBZByPath(fpath string) *ComicInfo {
+	return a.openCBZFile(nil, &fpath)
+}
+
+func (a *App) openCBZFile(id, fpath *string) *ComicInfo {
+	if id == nil && fpath == nil {
+		return nil
+	}
+
+	if id != nil && fpath == nil {
+		abspath, err := a.db.getAbsolutePath(*id)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fpath = &abspath
+	}
+
+	if err := openedCBZ.extract(*fpath); err != nil {
+		log.Fatal(err)
+	}
+
+	return openedCBZ.getInfo()
+}
+
+func (a *App) GetInitialOpenedCBZ() *ComicInfo {
+	return openedCBZ.getInfo()
 }

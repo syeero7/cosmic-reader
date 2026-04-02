@@ -7,15 +7,12 @@ import (
 	"net/http"
 	"path/filepath"
 	"strconv"
-	"strings"
-
-	"github.com/klauspost/compress/zip"
 )
 
 func newAssetsServer(next http.Handler, db *Database) http.Handler {
 	as := http.NewServeMux()
 	as.HandleFunc("/thumbnails/{image}", databaseMiddleware(db, thumbnailHandler))
-	as.HandleFunc("/comics/{comicId}/pages/{page}", databaseMiddleware(db, comicPageHandler))
+	as.HandleFunc("/pages/{page}", comicPageHandler)
 	as.Handle("/", next)
 	return as
 }
@@ -37,27 +34,14 @@ func thumbnailHandler(db *Database, w http.ResponseWriter, r *http.Request) {
 	w.Write(img)
 }
 
-func comicPageHandler(db *Database, w http.ResponseWriter, r *http.Request) {
-	comid := r.PathValue("comicId")
+func comicPageHandler(w http.ResponseWriter, r *http.Request) {
 	pageN, err := strconv.Atoi(r.PathValue("page"))
-	if err != nil || strings.TrimSpace(comid) == "" || pageN <= 0 {
+	if err != nil || pageN <= 0 {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	var file *zip.File
-	if r.URL.Query().Get("temp") == "true" {
-		file, err = getTempComicPage(pageN)
-	} else {
-		fpath, err := db.getAbsolutePath(comid)
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-			return
-		}
-
-		file, err = getComicPage(fpath, pageN)
-	}
-
+	file, err := openedCBZ.getComicPage(pageN)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return

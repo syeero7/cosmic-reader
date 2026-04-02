@@ -22,10 +22,18 @@ export function GetInitialOpenedCBZ() {
   return window['go']['main']['App']['GetInitialOpenedCBZ']();
 }
 
-export function OpenCBZFile() {
-  return window['go']['main']['App']['OpenCBZFile']();
+export function OpenCBZByID(arg1) {
+  return window['go']['main']['App']['OpenCBZByID'](arg1);
 }
 
-export function SelectFile() {
-  return window['go']['main']['App']['SelectFile']();
+export function OpenCBZByPath(arg1) {
+  return window['go']['main']['App']['OpenCBZByPath'](arg1);
+}
+
+export function SelectAnyComic() {
+  return window['go']['main']['App']['SelectAnyComic']();
+}
+
+export function SelectOnlyCBZ() {
+  return window['go']['main']['App']['SelectOnlyCBZ']();
 }

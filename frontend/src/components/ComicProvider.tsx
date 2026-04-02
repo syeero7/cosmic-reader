@@ -2,8 +2,6 @@ import { GetComicList } from "@wails/go/main/App";
 import { createContext } from "preact";
 import { type PropsWithChildren, useContext, useEffect, useReducer } from "preact/compat";
 
-export type ComicInfo = { id: string; title: string; pageCount: number };
-
 type ComicCtx = {
   comics: Record<string, string>;
   dispatch: (action: ReducerAction) => void;

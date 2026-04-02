@@ -2,8 +2,10 @@ import {
   AddComicBook,
   DeleteComic,
   GenerateULID,
-  OpenCBZFile,
-  SelectFile,
+  OpenCBZByID,
+  OpenCBZByPath,
+  SelectAnyComic,
+  SelectOnlyCBZ,
 } from "@wails/go/main/App";
 import type { TargetedInputEvent } from "preact";
 import { useRef, useState } from "preact/compat";
@@ -27,7 +29,7 @@ export function Home() {
   };
 
   const addComic = async () => {
-    const path = await SelectFile();
+    const path = await SelectAnyComic();
     if (!path) return;
 
     const id = await GenerateULID();
@@ -43,32 +45,17 @@ export function Home() {
   };
 
   const openComic = (id: string) => {
-    // TODO: get real values from backend
-    return () => {
-      router.navigateTo({
-        name: "comic-view",
-        data: {
-          id,
-          title: "",
-          pageCount: 0,
-        },
-      });
+    return async () => {
+      const cbz = await OpenCBZByID(id);
+      router.navigateTo({ name: "comic-view", data: cbz });
     };
   };
 
   const openCBZ = async () => {
-    const pageCount = await OpenCBZFile();
-    if (pageCount === 0) return;
-    const id = await GenerateULID();
-    // TODO: get id, title and page count when opening cbz file
-    router.navigateTo({
-      name: "temp-comic",
-      data: {
-        id,
-        title: "",
-        pageCount,
-      },
-    });
+    const path = await SelectOnlyCBZ();
+    if (!path) return;
+    const cbz = await OpenCBZByPath(path);
+    router.navigateTo({ name: "comic-view", data: cbz });
   };
 
   const archives = !filterQuery

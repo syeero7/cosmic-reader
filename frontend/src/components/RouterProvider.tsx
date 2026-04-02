@@ -1,10 +1,10 @@
+import type { main } from "@wails/go/models";
 import { createContext } from "preact";
 import type { PropsWithChildren } from "preact/compat";
 import { useContext, useState } from "preact/hooks";
-import type { ComicInfo } from "./ComicProvider";
 
 type Modals = "kbd-shortcuts" | "app-error";
-type Route = { name: "home" } | { name: "comic-view" | "temp-comic"; data: ComicInfo };
+type Route = { name: "home" } | { name: "comic-view"; data: main.ComicInfo };
 type RouterCtx = {
   navigateTo: (to: Route) => void;
   openModal: (modal: Modals) => void;
