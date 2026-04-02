@@ -60,6 +60,7 @@ func (d *Database) setLibraryDir(dirpath *string) error {
 	})
 }
 
+// TODO: add functionality to change comic library directory
 func (d *Database) getLibraryDir() string {
 	var libraryDir []byte
 	d.db.View(func(tx *bbolt.Tx) error {

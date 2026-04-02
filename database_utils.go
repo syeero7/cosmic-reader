@@ -39,6 +39,7 @@ func ulidToString(b []byte) string {
 	return id.String()
 }
 
+// TODO: compact database
 func (d *Database) compactDB() error {
 	lastCompacted, err := d.getLastCompacted()
 	if err != nil {
