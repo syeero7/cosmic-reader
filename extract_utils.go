@@ -102,9 +102,19 @@ func (ex *Extractor) createZipEntry(cbz *zip.Writer, file fs.File) (io.Writer, e
 }
 
 func (ex *Extractor) extractComicTitle(xmlf fs.File, name, fpath string) error {
-	title, err := parseTitleFromXML(xmlf, name)
-	if err != nil {
-		return err
+	xmlFile := strings.ToLower(name) == "comicinfo.xml"
+	if ex.archive.Title != "" && !xmlFile {
+		return nil
+	}
+
+	title := ""
+	if xmlFile {
+		t, err := parseTitleFromXML(xmlf)
+		if err != nil {
+			return err
+		}
+
+		title = t
 	}
 
 	if title == "" {
@@ -115,11 +125,7 @@ func (ex *Extractor) extractComicTitle(xmlf fs.File, name, fpath string) error {
 	return nil
 }
 
-func parseTitleFromXML(file fs.File, filename string) (string, error) {
-	if strings.ToLower(filename) != "comicinfo.xml" {
-		return "", nil
-	}
-
+func parseTitleFromXML(file fs.File) (string, error) {
 	byt, err := io.ReadAll(file)
 	if err != nil {
 		return "", err
