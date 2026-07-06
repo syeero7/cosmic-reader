@@ -25,3 +25,15 @@ wails build -upx -trimpath -platform=linux
 # windows
 wails build -upx -trimpath -platform=windows
 ```
+
+## Local Development
+
+```bash
+# Initialize go workspace
+go work init .
+
+# Add local Wails module to the workspace
+go work use /home/<username>/go/pkg/mod/github.com/wailsapp/wails/<wails_version>
+
+wails dev
+```
