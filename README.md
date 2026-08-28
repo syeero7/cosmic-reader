@@ -28,6 +28,13 @@ git clone https://github.com/syeero7/cosmic-reader
 cd cosmic-reader
 ```
 
+Install dependencies
+
+```bash
+go mod tidy
+npm install --prefix ./frontend
+```
+
 Compile the binary
 
 ```bash
@@ -38,15 +45,9 @@ wails build -upx -trimpath -platform=linux
 wails build -upx -trimpath -platform=windows
 ```
 
-## Local Development
-
-Install wails and required dependencies. [Wails docs](https://wails.io/docs/gettingstarted/installation/)
+### Local Development
 
 ```bash
-# Install dependencies
-go mod tidy
-npm install --prefix ./frontend
-
 # Initialize go workspace
 go work init .
 
