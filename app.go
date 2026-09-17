@@ -3,48 +3,40 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-type App struct {
-	ctx context.Context
+type MainService struct {
+	app *application.App
 	db  *Database
 }
 
-func NewApp() *App {
-	return &App{}
+func NewMainService(app *application.App) *MainService {
+	return &MainService{app: app}
 }
 
-func (a *App) startup(ctx context.Context) {
-	a.ctx = ctx
-	a.initializeDB()
-	a.emitFileOpening(nil)
+func (s *MainService) ServiceStartup(_ context.Context, options application.ServiceOptions) error {
+	s.initializeDB()
+	s.emitFileOpening(nil)
+	return nil
 }
 
-func (a *App) shutdown(ctx context.Context) {
+func (s *MainService) ServiceShutdown() error {
 	openedCBZ.reset()
-	a.db.close()
+	return nil
 }
 
-func (a *App) assetServer(next http.Handler) http.Handler {
-	a.initializeDB()
-	return newAssetsServer(next, a.db)
+// FIXME: emit instance startup data
+func (s *MainService) secondInstanceLaunch(data application.SecondInstanceData) {
+	s.emitFileOpening(data.Args)
 }
 
-func (a *App) secondInstanceLaunch(data options.SecondInstanceData) {
-	a.emitFileOpening(data.Args)
-	runtime.WindowUnminimise(a.ctx)
-	runtime.WindowShow(a.ctx)
-}
-
-func (a *App) initializeDB() {
-	if a.db != nil {
+func (s *MainService) initializeDB() {
+	if s.db != nil {
 		return
 	}
 
@@ -53,10 +45,10 @@ func (a *App) initializeDB() {
 		log.Fatal(err)
 	}
 
-	a.db = db
+	s.db = db
 }
 
-func (a *App) emitFileOpening(args []string) {
+func (s *MainService) emitFileOpening(args []string) {
 	if args == nil {
 		args = os.Args
 	}
@@ -71,11 +63,11 @@ func (a *App) emitFileOpening(args []string) {
 			log.Fatal(err)
 		}
 
-		runtime.EventsEmit(a.ctx, "comic-opened", openedCBZ.getInfo())
+		s.app.Event.Emit("comic-opened", openedCBZ.getInfo())
 	}
 }
 
-func (a *App) GenerateULID() string {
+func (s *MainService) GenerateULID() string {
 	id, err := generateULID()
 	if err != nil {
 		log.Println(err)
@@ -84,19 +76,19 @@ func (a *App) GenerateULID() string {
 	return id.String()
 }
 
-func (a *App) SelectAnyComic() string {
-	return a.selectFile(false)
+func (s *MainService) SelectAnyComic() string {
+	return s.selectFile(false)
 }
 
-func (a *App) SelectOnlyCBZ() string {
-	return a.selectFile(true)
+func (s *MainService) SelectOnlyCBZ() string {
+	return s.selectFile(true)
 }
 
-func (a *App) selectFile(onlyCBZ bool) string {
-	opt := runtime.OpenDialogOptions{
+func (s *MainService) selectFile(onlyCBZ bool) string {
+	opt := &application.OpenFileDialogOptions{
 		Title:                "Select Comic Books",
 		CanCreateDirectories: false,
-		Filters: []runtime.FileFilter{{
+		Filters: []application.FileFilter{{
 			DisplayName: "Comic Books (*.cbz, *.cbr, *.cbt, *.cb7)",
 			Pattern:     "*.cbz;*.cbr;*.cb7;*.cbt",
 		}},
@@ -104,30 +96,30 @@ func (a *App) selectFile(onlyCBZ bool) string {
 
 	if onlyCBZ {
 		opt.Title = "Open a CBZ File"
-		opt.Filters = []runtime.FileFilter{{
+		opt.Filters = []application.FileFilter{{
 			DisplayName: "Comic Book Zip *.cbz",
 			Pattern:     "*.cbz",
 		}}
 	}
 
-	fpath, err := runtime.OpenFileDialog(a.ctx, opt)
+	fpath, err := s.app.Dialog.OpenFileWithOptions(opt).PromptForSingleSelection()
 	if err != nil {
-		log.Fatal(err)
+
 	}
 
 	return fpath
 }
 
-func (a *App) DeleteComic(id string) {
+func (s *MainService) DeleteComic(id string) {
 	openedCBZ.reset()
-	if err := a.db.removeArchive(id); err != nil {
+	if err := s.db.removeArchive(id); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func (a *App) AddComicBook(id, fpath string) string {
+func (s *MainService) AddComicBook(id, fpath string) string {
 	openedCBZ.reset()
-	arch, err := a.db.addArchive(id, fpath)
+	arch, err := s.db.addArchive(id, fpath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -135,8 +127,8 @@ func (a *App) AddComicBook(id, fpath string) string {
 	return arch.Title
 }
 
-func (a *App) GetComicList() map[string]string {
-	archives, err := a.db.getAllArchives()
+func (s *MainService) GetComicList() map[string]string {
+	archives, err := s.db.getAllArchives()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -144,21 +136,21 @@ func (a *App) GetComicList() map[string]string {
 	return archives
 }
 
-func (a *App) OpenCBZByID(id string) *ComicInfo {
-	return a.openCBZFile(&id, nil)
+func (s *MainService) OpenCBZByID(id string) *ComicInfo {
+	return s.openCBZFile(&id, nil)
 }
 
-func (a *App) OpenCBZByPath(fpath string) *ComicInfo {
-	return a.openCBZFile(nil, &fpath)
+func (s *MainService) OpenCBZByPath(fpath string) *ComicInfo {
+	return s.openCBZFile(nil, &fpath)
 }
 
-func (a *App) openCBZFile(id, fpath *string) *ComicInfo {
+func (s *MainService) openCBZFile(id, fpath *string) *ComicInfo {
 	if id == nil && fpath == nil {
 		return nil
 	}
 
 	if id != nil && fpath == nil {
-		abspath, err := a.db.getAbsolutePath(*id)
+		abspath, err := s.db.getAbsolutePath(*id)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -173,6 +165,6 @@ func (a *App) openCBZFile(id, fpath *string) *ComicInfo {
 	return openedCBZ.getInfo()
 }
 
-func (a *App) GetInitialOpenedCBZ() *ComicInfo {
+func (s *MainService) GetInitialOpenedCBZ() *ComicInfo {
 	return openedCBZ.getInfo()
 }

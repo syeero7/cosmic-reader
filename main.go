@@ -2,38 +2,52 @@ package main
 
 import (
 	"embed"
+	"log"
+	"net/http"
 
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
 
 func main() {
-	app := NewApp()
-	err := wails.Run(&options.App{
-		Title:      "cosmic-reader",
-		MinWidth:   1024,
-		MinHeight:  768,
-		Fullscreen: true,
-		AssetServer: &assetserver.Options{
-			Assets:     assets,
-			Middleware: app.assetServer,
+	var window *application.WebviewWindow
+	app := application.New(application.Options{
+		Name: "cosmic-reader",
+		Assets: application.AssetOptions{
+			Handler: application.AssetFileServerFS(assets),
+			Middleware: func(next http.Handler) http.Handler {
+				return newAssetsServer(next)
+			},
 		},
-		OnStartup:  app.startup,
-		OnShutdown: app.shutdown,
-		SingleInstanceLock: &options.SingleInstanceLock{
-			UniqueId:               "cosmic_reader.wails",
-			OnSecondInstanceLaunch: app.secondInstanceLaunch,
-		},
-		Bind: []interface{}{
-			app,
+		SingleInstance: &application.SingleInstanceOptions{
+			UniqueID: "cosmic_reader.wails",
+			OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
+				if window != nil {
+					window.Restore()
+					window.Focus()
+				}
+			},
 		},
 	})
 
-	if err != nil {
+	window = app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Title:     "cosmic-reader",
+		MinWidth:  1024,
+		MinHeight: 768,
+	})
+
+	app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(event *application.ApplicationEvent) {
+		window.Fullscreen()
+		data := event.Context().Data()
+		log.Println("app data: ", data)
+	})
+
+	app.RegisterService(application.NewService(NewMainService(app)))
+
+	if err := app.Run(); err != nil {
 		println("Error:", err.Error())
 	}
 }

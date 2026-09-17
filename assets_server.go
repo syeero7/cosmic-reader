@@ -9,9 +9,10 @@ import (
 	"strconv"
 )
 
-func newAssetsServer(next http.Handler, db *Database) http.Handler {
+func newAssetsServer(next http.Handler) http.Handler {
 	as := http.NewServeMux()
-	as.HandleFunc("/thumbnails/{image}", databaseMiddleware(db, thumbnailHandler))
+	// FIXME: make thumbnails optional & use disk as storage
+	// as.HandleFunc("/thumbnails/{image}", databaseMiddleware(db, thumbnailHandler))
 	as.HandleFunc("/pages/{page}", comicPageHandler)
 	as.Handle("/", next)
 	return as
